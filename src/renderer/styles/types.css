@@ -1,0 +1,41 @@
+.type_badge {
+  min-width: 82px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  text-transform: uppercase;
+}
+
+.type_badge_compact {
+  min-width: 68px;
+  padding: 4px 6px;
+  font-size: 0.62rem;
+}
+
+.type_normal { background: #71717a; }
+.type_fire { background: #dc4b32; }
+.type_water { background: #2878c7; }
+.type_electric { background: #d8a900; }
+.type_grass { background: #438f45; }
+.type_ice { background: #349ba5; }
+.type_fighting { background: #a83a34; }
+.type_poison { background: #87469a; }
+.type_ground { background: #a66d34; }
+.type_flying { background: #697bc0; }
+.type_psychic { background: #c84670; }
+.type_bug { background: #71852b; }
+.type_rock { background: #8c7941; }
+.type_ghost { background: #5f4d82; }
+.type_dragon { background: #5453b7; }
+.type_dark { background: #514846; }
+.type_steel { background: #657788; }
+.type_fairy { background: #bd6d9c; }
