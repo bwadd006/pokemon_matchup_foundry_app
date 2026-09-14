@@ -23,12 +23,18 @@ const config: ForgeConfig = {
       './third_party_notices.md',
     ],
   },
-  rebuildConfig: {},
+  // better-sqlite3 v13 ships a Windows Node-API binary. Rebuilding it is
+  // unnecessary on Windows and requires Python and Visual Studio tooling.
+  // Keep the existing rebuild behavior on Linux and macOS.
+  rebuildConfig:
+    process.platform === 'win32'
+      ? { ignoreModules: ['better-sqlite3'] }
+      : {},
   makers: [
     new MakerSquirrel({
       name: 'pokemon_matchup_foundry',
     }),
-    new MakerZIP({}, ['linux']),
+    new MakerZIP({}, ['linux', 'win32']),
     new MakerDeb({
       options: {
         maintainer: 'Pokémon Matchup Foundry contributors',
