@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "sources": {
+    "pokeapi_api_data": {
+      "repository": "https://github.com/PokeAPI/api-data.git",
+      "commit": "c8a5afa0d7638f1e72231e2e4e91fe9ec4773017",
+      "license": "BSD-3-Clause",
+      "directories": [
+        "data/api/v2/ability",
+        "data/api/v2/generation",
+        "data/api/v2/pokemon",
+        "data/api/v2/pokemon-form",
+        "data/api/v2/pokemon-species",
+        "data/api/v2/stat",
+        "data/api/v2/type",
+        "data/api/v2/version-group"
+      ]
+    },
+    "pokeapi_sprites": {
+      "repository": "https://github.com/PokeAPI/sprites.git",
+      "branch": "master",
+      "license": "CC0-1.0",
+      "rights_notice": "All image contents within are Copyright The Pokémon Company.",
+      "status": "provisional_replaceable_development_assets",
+      "commit": "2ecb4eeacd5a1718621fc30f12772e3f60d830b9"
+    }
+  }
+}

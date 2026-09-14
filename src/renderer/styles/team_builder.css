@@ -1,0 +1,329 @@
+.team_builder_hero {
+  margin-bottom: 18px;
+}
+
+.team_slots {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.team_slot {
+  min-width: 0;
+  min-height: 238px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel);
+}
+
+.team_slot_unavailable {
+  border-color: #f79009;
+}
+
+.team_slot_heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team_slot_heading button {
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #101828;
+  color: #d0d5dd;
+  cursor: pointer;
+  font-size: 0.66rem;
+}
+
+.team_slot_identity {
+  min-height: 105px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.team_slot_identity img {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.team_slot_identity strong,
+.team_slot_identity small {
+  display: block;
+}
+
+.team_slot_identity strong {
+  line-height: 1.2;
+}
+
+.team_slot_identity small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.team_slot_types,
+.team_header_types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 7px;
+}
+
+.team_slot_types {
+  justify-content: center;
+}
+
+.ability_selector,
+.pokemon_selector {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 9px;
+  color: #d0d5dd;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ability_selector select,
+.pokemon_selector input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 9px;
+}
+
+.pokemon_results {
+  position: absolute;
+  top: 62px;
+  left: 0;
+  z-index: 20;
+  width: max(100%, 260px);
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid #667085;
+  border-radius: 8px;
+  background: #101828;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  list-style: none;
+}
+
+.pokemon_results li button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  gap: 2px 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.pokemon_results li[aria-selected="true"] button,
+.pokemon_results li button:hover {
+  background: var(--panel-raised);
+}
+
+.pokemon_results li button > span {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.pokemon_results li button small {
+  color: var(--muted);
+}
+
+.pokemon_results_empty {
+  padding: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.slot_warning,
+.slot_notice {
+  margin: 8px 0 0;
+  color: #fec84b;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.slot_notice {
+  color: #b2ccff;
+}
+
+.team_coverage_panel {
+  min-height: 280px;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+}
+
+.team_coverage_scroller {
+  min-height: 280px;
+  overflow: visible;
+  overscroll-behavior: contain;
+}
+
+.team_coverage_table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: fixed;
+}
+
+.team_coverage_table th,
+.team_coverage_table td {
+  width: 142px;
+  min-width: 142px;
+  max-width: 142px;
+  text-align: center;
+}
+
+.team_coverage_table thead th {
+  position: sticky;
+  top: 84px;
+  z-index: 5;
+  height: 154px;
+  padding: 7px;
+  background: #101828;
+  vertical-align: top;
+}
+
+.team_coverage_table .team_coverage_corner,
+.team_coverage_table .team_type_header {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  width: 112px;
+  min-width: 112px;
+  background: #101828;
+}
+
+.team_coverage_table .team_coverage_corner {
+  top: 84px;
+  padding: 9px;
+  color: var(--muted);
+  font-size: 0.63rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.team_coverage_corner span {
+  display: block;
+}
+
+.team_member_header img {
+  width: 72px;
+  height: 72px;
+  display: block;
+  margin: 0 auto 3px;
+  object-fit: contain;
+}
+
+.team_member_header strong,
+.team_member_header small {
+  display: block;
+  max-width: 150px;
+  overflow: hidden;
+  margin: 0 auto;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
+
+.team_member_header small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.67rem;
+}
+
+.team_type_header {
+  height: 52px;
+}
+
+.team_effectiveness_cell {
+  height: 52px;
+  color: #d0d5dd;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.team_coverage_table .coverage_total_header,
+.team_coverage_table .coverage_total {
+  position: sticky;
+  z-index: 6;
+  width: 92px;
+  min-width: 92px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.team_coverage_table .coverage_total_weak {
+  right: 92px;
+}
+
+.team_coverage_table .coverage_total_resist {
+  right: 0;
+}
+
+.team_coverage_table thead .coverage_total_header {
+  z-index: 8;
+  padding-top: 60px;
+}
+
+.team_coverage_table tbody .coverage_total {
+  background: #101828;
+  font-variant-numeric: tabular-nums;
+}
+
+.team_coverage_table tbody .coverage_total_weak {
+  color: #fda29b;
+}
+
+.team_coverage_table tbody .coverage_total_resist {
+  color: #6ce9a6;
+}
+
+.team_builder_legend {
+  margin-bottom: 14px;
+}
+
+.team_member_header_empty {
+  padding-top: 62px !important;
+  color: var(--muted);
+}
+
+.effectiveness_empty {
+  background: var(--panel) !important;
+  color: #667085;
+}
+
+.team_empty_guidance {
+  margin: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.78rem;
+}

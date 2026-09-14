@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title">
+  <title id="title">Pokémon image unavailable</title>
+  <rect width="120" height="120" rx="18" fill="#202939"/>
+  <circle cx="60" cy="60" r="34" fill="none" stroke="#667085" stroke-width="8"/>
+  <path d="M26 60h68" stroke="#667085" stroke-width="8"/>
+  <circle cx="60" cy="60" r="10" fill="#202939" stroke="#98a2b3" stroke-width="6"/>
+</svg>

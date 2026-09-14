@@ -23,3 +23,10 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+
+# Electron Forge and generated application data
+.webpack/
+database/generated/
+data/cache/
+resources/images/pokemon/
+resources/image_manifest.json
