@@ -13,47 +13,75 @@ single-type effectiveness chart, six-slot defensive Team Builder, and
 bidirectional Team Matchup analysis with supported attacker and defender
 ability effects.
 
-## Development
+## Requirements
 
-Install dependencies:
+- Node.js 22 or newer, with npm
+- Git
+
+Linux development also requires Python 3, `make`, and a C++ compiler so
+Electron Forge can prepare native dependencies. On Debian or Ubuntu, install
+those system tools with:
 
 ```sh
-npm install
+sudo apt install git python3 make g++
 ```
 
-Download the pinned source snapshot:
+## Run on Windows
 
-```sh
+Install Node.js LTS and Git, then open a new PowerShell window so the updated
+`PATH` is available. From the repository directory, run:
+
+```powershell
+npm ci
 npm run data:download
-```
-
-Build the database, import the provisional local images, and then validate the
-database:
-
-```sh
 npm run data:build
 npm run assets:import
 npm run data:validate
-```
-
-Start the application:
-
-```sh
+npm test
+npm run typecheck
 npm start
 ```
 
-Create a self-contained package for the current operating system:
+## Run on Linux
+
+After installing Node.js, Git, Python 3, `make`, and a C++ compiler, run from
+the repository directory:
 
 ```sh
-npm run package
-```
-
-Run verification:
-
-```sh
+npm ci
+npm run data:download
+npm run data:build
+npm run assets:import
+npm run data:validate
 npm test
 npm run typecheck
+npm start
 ```
 
-The generated database, downloaded source cache, provisional images, and build
-output are not maintained by hand.
+## Build Portable ZIP Archives
+
+Build each archive on its target operating system. The ZIP contains the
+Electron runtime, application, database, images, and native dependencies; the
+recipient does not need Node.js or the source repository. The recipient must
+extract the complete archive before launching the executable.
+
+On 64-bit Windows, run in PowerShell:
+
+```powershell
+npx electron-forge make --platform win32 --arch x64 --targets "@electron-forge/maker-zip"
+```
+
+The archive is written under `out/make/zip/win32/x64/`. After extraction, run
+`pokemon_matchup_foundry.exe`.
+
+On 64-bit Linux, run:
+
+```sh
+npx electron-forge make --platform linux --arch x64 --targets @electron-forge/maker-zip
+```
+
+The archive is written under `out/make/zip/linux/x64/`. After extraction, run
+the `pokemon_matchup_foundry` executable.
+
+The generated database, downloaded source cache, provisional images,
+dependencies, and build output are not maintained by hand.
