@@ -2,16 +2,16 @@ import type Database from 'better-sqlite3';
 
 import type {
   TeamAbility,
-  TeamBuilderOption,
+  TeamPokemonOption,
 } from '../../shared/models/team';
 
-interface RawTeamBuilderRow {
+interface RawTeamPokemonRow {
   form_id: number;
   pokemon_id: number;
   national_dex_number: number;
   identifier: string;
   name: string;
-  category: TeamBuilderOption['category'];
+  category: TeamPokemonOption['category'];
   image_path: string | null;
   type_one_id: number;
   type_one_identifier: string;
@@ -26,10 +26,10 @@ interface RawTeamBuilderRow {
   ability_is_hidden: number | null;
 }
 
-export function listTeamBuilderOptions(
+export function listTeamPokemonOptions(
   database: Database.Database,
   generationId: number,
-): TeamBuilderOption[] {
+): TeamPokemonOption[] {
   const rows = database
     .prepare(
       `
@@ -81,9 +81,9 @@ export function listTeamBuilderOptions(
       ORDER BY ps.national_dex_number, pf.sort_order, pf.form_order, pf.id, fa.slot
       `,
     )
-    .all(generationId, generationId) as RawTeamBuilderRow[];
+    .all(generationId, generationId) as RawTeamPokemonRow[];
 
-  const options = new Map<number, TeamBuilderOption>();
+  const options = new Map<number, TeamPokemonOption>();
   for (const row of rows) {
     let option = options.get(row.form_id);
     if (!option) {

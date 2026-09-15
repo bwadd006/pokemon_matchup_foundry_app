@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
   DatasetInformation,
@@ -10,9 +10,31 @@ import type {
 import { GenerationSelector } from '../components/generation_selector';
 import { PokemonImage } from '../components/pokemon_image';
 import { TypeBadge } from '../components/type_badge';
-import type { TeamSlot } from '../../shared/models/team';
+import type {
+  SavedTeam,
+  TeamPokemonOption,
+  TeamSide,
+  TeamSlot,
+} from '../../shared/models/team';
+import {
+  activeTeamIsDirty,
+  teamIsValidForGeneration,
+} from '../../shared/team_persistence';
+import type {
+  SavedTeamActions,
+  SavedTeamBinding,
+  TeamIdentityBinding,
+} from '../components/saved_team_file_bar';
+import { TeamNameDialog } from '../components/saved_team_file_bar';
+import {
+  TypeCoveragePage,
+  type CoverageMode,
+} from '../features/type_coverage/type_coverage_page';
 import { TeamBuilderPage } from '../features/team_builder/team_builder_page';
-import { TeamMatchupPage } from '../features/team_matchup/team_matchup_page';
+import {
+  TeamMatchupPage,
+  type AttackDirection,
+} from '../features/team_matchup/team_matchup_page';
 import { TypeChartPage } from '../features/type_chart/type_chart_page';
 
 type SortKey =
@@ -42,7 +64,7 @@ function sortableValue(row: PokedexRow, key: SortKey): string | number {
 
 export function Application() {
   const [activeFeature, setActiveFeature] = useState<
-    'pokedex' | 'type_chart' | 'team_builder' | 'team_matchup'
+    'pokedex' | 'type_chart' | 'team_builder' | 'type_coverage' | 'team_matchup'
   >('pokedex');
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [generationId, setGenerationId] = useState(9);
@@ -52,6 +74,17 @@ export function Application() {
   const [opponentTeamSlots, setOpponentTeamSlots] = useState<TeamSlot[]>(() =>
     Array.from({ length: 6 }, () => null),
   );
+  const [coverageSide, setCoverageSide] = useState<TeamSide>('user');
+  const [coverageMode, setCoverageMode] = useState<CoverageMode>('defensive');
+  const [matchupDirection, setMatchupDirection] = useState<AttackDirection>('opponent');
+  const [userSavedTeam, setUserSavedTeam] = useState<SavedTeam | null>(null);
+  const [opponentSavedTeam, setOpponentSavedTeam] = useState<SavedTeam | null>(null);
+  const [workflowNameRequest, setWorkflowNameRequest] = useState<{
+    side: TeamSide;
+    value: string;
+  } | null>(null);
+  const workflowNameResolver = useRef<((name: string | null) => void) | null>(null);
+  const closeWorkflowActive = useRef(false);
   const [types, setTypes] = useState<PokemonType[]>([]);
   const [rows, setRows] = useState<PokedexRow[]>([]);
   const [dataset, setDataset] = useState<DatasetInformation | null>(null);
@@ -99,6 +132,28 @@ export function Application() {
       })
       .finally(() => setLoading(false));
   }, [generationId]);
+
+  useEffect(() => window.pokemonMatchupFoundry.onCloseRequested(() => {
+    if (closeWorkflowActive.current || workflowNameResolver.current) return;
+    closeWorkflowActive.current = true;
+    void (async () => {
+      try {
+        const userDirty = activeTeamIsDirty(generationId, teamSlots, userSavedTeam);
+        const opponentDirty = activeTeamIsDirty(
+          generationId,
+          opponentTeamSlots,
+          opponentSavedTeam,
+        );
+        if (userDirty && !await protectUnsavedTeam('user', 'close the application')) return;
+        if (opponentDirty && !await protectUnsavedTeam('opponent', 'close the application')) return;
+        window.pokemonMatchupFoundry.confirmClose();
+      } catch (reason) {
+        await showError('The application could not save before closing', errorMessage(reason));
+      } finally {
+        closeWorkflowActive.current = false;
+      }
+    })();
+  }), [generationId, opponentSavedTeam, opponentTeamSlots, teamSlots, userSavedTeam]);
 
   const visibleRows = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -169,6 +224,223 @@ export function Application() {
     }
   }
 
+  function slotsFor(side: TeamSide): TeamSlot[] {
+    return side === 'user' ? teamSlots : opponentTeamSlots;
+  }
+
+  function savedTeamFor(side: TeamSide): SavedTeam | null {
+    return side === 'user' ? userSavedTeam : opponentSavedTeam;
+  }
+
+  function setSlotsFor(side: TeamSide, slots: TeamSlot[]): void {
+    if (side === 'user') setTeamSlots(slots);
+    else setOpponentTeamSlots(slots);
+  }
+
+  function setSavedTeamFor(side: TeamSide, team: SavedTeam | null): void {
+    if (side === 'user') setUserSavedTeam(team);
+    else setOpponentSavedTeam(team);
+  }
+
+  async function saveSide(side: TeamSide): Promise<boolean> {
+    const savedTeam = savedTeamFor(side);
+    if (!savedTeam) return false;
+    const updated = await window.pokemonMatchupFoundry.updateSavedTeam(savedTeam.id, {
+      generationId,
+      slots: slotsFor(side),
+    });
+    setSavedTeamFor(side, updated);
+    return true;
+  }
+
+  async function saveSideAs(side: TeamSide, name: string): Promise<boolean> {
+    const created = await window.pokemonMatchupFoundry.createSavedTeam({
+      name,
+      generationId,
+      slots: slotsFor(side),
+    });
+    setSavedTeamFor(side, created);
+    return true;
+  }
+
+  function requestTeamName(side: TeamSide): Promise<string | null> {
+    return new Promise((resolve) => {
+      workflowNameResolver.current = resolve;
+      setWorkflowNameRequest({ side, value: '' });
+    });
+  }
+
+  function finishTeamNameRequest(name: string | null): void {
+    const resolve = workflowNameResolver.current;
+    workflowNameResolver.current = null;
+    setWorkflowNameRequest(null);
+    resolve?.(name);
+  }
+
+  async function protectUnsavedTeam(side: TeamSide, action: string): Promise<boolean> {
+    const slots = slotsFor(side);
+    const savedTeam = savedTeamFor(side);
+    if (!activeTeamIsDirty(generationId, slots, savedTeam)) return true;
+    const role = side === 'user' ? 'Your Team' : 'Opponent Team';
+    const choice = await window.pokemonMatchupFoundry.showMessage({
+      type: 'warning',
+      title: 'Unsaved team',
+      message: `${role} has unsaved changes.`,
+      detail: `Choose what to do before you ${action}.`,
+      buttons: ['Save', `Discard and ${action}`, 'Cancel'],
+      defaultId: 0,
+      cancelId: 2,
+    });
+    if (choice === 0) {
+      if (savedTeam) return saveSide(side);
+      while (true) {
+        const name = await requestTeamName(side);
+        if (name === null) return false;
+        try {
+          return await saveSideAs(side, name);
+        } catch (reason) {
+          await showError('The team could not be saved', errorMessage(reason));
+        }
+      }
+    }
+    return choice === 1;
+  }
+
+  async function loadSide(side: TeamSide, requestedTeam: SavedTeam): Promise<boolean> {
+    const otherSavedTeam = savedTeamFor(side === 'user' ? 'opponent' : 'user');
+    if (otherSavedTeam?.id === requestedTeam.id) {
+      await window.pokemonMatchupFoundry.showMessage({
+        type: 'info',
+        title: 'Team already loaded',
+        message: `That team is already loaded as ${side === 'user' ? 'Opponent Team' : 'Your Team'}.`,
+        buttons: ['OK'],
+        cancelId: 0,
+      });
+      return false;
+    }
+
+    if (requestedTeam.generationId !== generationId) {
+      const response = await window.pokemonMatchupFoundry.showMessage({
+        type: 'warning',
+        title: 'Change generation and load team',
+        message: `Load “${requestedTeam.name}” in Generation ${requestedTeam.generationId}?`,
+        detail: 'This changes the generation for the entire application and clears both active teams before loading.',
+        buttons: ['Continue', 'Cancel'],
+        defaultId: 1,
+        cancelId: 1,
+      });
+      if (response !== 0) return false;
+      if (!await protectUnsavedTeam('user', 'load the other generation')) return false;
+      if (!await protectUnsavedTeam('opponent', 'load the other generation')) return false;
+      setTeamSlots(Array.from({ length: 6 }, () => null));
+      setOpponentTeamSlots(Array.from({ length: 6 }, () => null));
+      setUserSavedTeam(null);
+      setOpponentSavedTeam(null);
+      setGenerationId(requestedTeam.generationId);
+    } else if (!await protectUnsavedTeam(side, `load “${requestedTeam.name}”`)) {
+      return false;
+    }
+
+    const latest = (await window.pokemonMatchupFoundry.listSavedTeams())
+      .find((team) => team.id === requestedTeam.id);
+    if (!latest) throw new Error('The saved team no longer exists.');
+    const options = await window.pokemonMatchupFoundry.listTeamPokemonOptions(
+      latest.generationId,
+    );
+    const optionsByFormId = new Map(options.map((option) => [option.formId, option]));
+    setSlotsFor(side, resolveTeamForGeneration(latest.slots, optionsByFormId));
+    setSavedTeamFor(side, latest);
+    return true;
+  }
+
+  async function renameSaved(
+    _side: TeamSide,
+    team: SavedTeam,
+    name: string,
+  ): Promise<boolean> {
+    const renamed = await window.pokemonMatchupFoundry.renameSavedTeam(team.id, name);
+    if (userSavedTeam?.id === renamed.id) setUserSavedTeam(renamed);
+    if (opponentSavedTeam?.id === renamed.id) setOpponentSavedTeam(renamed);
+    return true;
+  }
+
+  async function deleteSaved(_side: TeamSide, team: SavedTeam): Promise<boolean> {
+    await window.pokemonMatchupFoundry.deleteSavedTeam(team.id);
+    if (userSavedTeam?.id === team.id) setUserSavedTeam(null);
+    if (opponentSavedTeam?.id === team.id) setOpponentSavedTeam(null);
+    return true;
+  }
+
+  function actionsFor(side: TeamSide): SavedTeamActions {
+    return {
+      save: () => saveSide(side),
+      saveNew: (name) => saveSideAs(side, name),
+      load: (team) => loadSide(side, team),
+      rename: (team, name) => renameSaved(side, team, name),
+      delete: (team) => deleteSaved(side, team),
+    };
+  }
+
+  function bindingFor(side: TeamSide): SavedTeamBinding {
+    const savedTeam = savedTeamFor(side);
+    return {
+      savedTeam,
+      otherSavedTeamId: savedTeamFor(side === 'user' ? 'opponent' : 'user')?.id ?? null,
+      dirty: activeTeamIsDirty(generationId, slotsFor(side), savedTeam),
+      actions: actionsFor(side),
+    };
+  }
+
+  function identityFor(side: TeamSide): TeamIdentityBinding {
+    const savedTeam = savedTeamFor(side);
+    return {
+      savedTeam,
+      dirty: activeTeamIsDirty(generationId, slotsFor(side), savedTeam),
+    };
+  }
+
+  async function requestGenerationChange(nextGenerationId: number): Promise<void> {
+    if (nextGenerationId === generationId) return;
+    try {
+      const [options, nextChart] = await Promise.all([
+        window.pokemonMatchupFoundry.listTeamPokemonOptions(nextGenerationId),
+        window.pokemonMatchupFoundry.getTypeChart(nextGenerationId),
+      ]);
+      const validTypes = new Set(nextChart.types.map((type) => type.identifier));
+      const invalidSides = (['user', 'opponent'] as TeamSide[]).filter(
+        (side) => !teamIsValidForGeneration(slotsFor(side), options, validTypes),
+      );
+      if (invalidSides.length > 0) {
+        const labels = invalidSides.map((side) => side === 'user' ? 'Your Team' : 'Opponent Team').join(' and ');
+        const response = await window.pokemonMatchupFoundry.showMessage({
+          type: 'warning',
+          title: 'Change generation',
+          message: `${labels} contains selections unavailable in Generation ${nextGenerationId}.`,
+          detail: `${labels} will be cleared. Fully valid active teams will remain in place.`,
+          buttons: ['Clear and Change', 'Cancel'],
+          defaultId: 1,
+          cancelId: 1,
+        });
+        if (response !== 0) return;
+        for (const side of invalidSides) {
+          if (!await protectUnsavedTeam(side, 'change generations')) return;
+        }
+        for (const side of invalidSides) {
+          setSlotsFor(side, Array.from({ length: 6 }, () => null));
+          setSavedTeamFor(side, null);
+        }
+      }
+      const optionsByFormId = new Map(options.map((option) => [option.formId, option]));
+      for (const side of (['user', 'opponent'] as TeamSide[])) {
+        if (invalidSides.includes(side)) continue;
+        setSlotsFor(side, resolveTeamForGeneration(slotsFor(side), optionsByFormId));
+      }
+      setGenerationId(nextGenerationId);
+    } catch (reason) {
+      await showError('The generation could not be changed', errorMessage(reason));
+    }
+  }
+
   const generationOne = generationId === 1;
 
   return (
@@ -205,6 +477,14 @@ export function Application() {
           </button>
           <button
             type="button"
+            className={`navigation_item ${activeFeature === 'type_coverage' ? 'navigation_item_active' : ''}`}
+            aria-current={activeFeature === 'type_coverage' ? 'page' : undefined}
+            onClick={() => setActiveFeature('type_coverage')}
+          >
+            Type Coverage
+          </button>
+          <button
+            type="button"
             className={`navigation_item ${activeFeature === 'team_matchup' ? 'navigation_item_active' : ''}`}
             aria-current={activeFeature === 'team_matchup' ? 'page' : undefined}
             onClick={() => setActiveFeature('team_matchup')}
@@ -228,7 +508,7 @@ export function Application() {
           <GenerationSelector
             generations={generations}
             generationId={generationId}
-            onChange={setGenerationId}
+            onChange={(next) => void requestGenerationChange(next)}
           />
         </section>
 
@@ -407,25 +687,44 @@ export function Application() {
         <TypeChartPage
           generations={generations}
           generationId={generationId}
-          onGenerationChange={setGenerationId}
+          onGenerationChange={(next) => void requestGenerationChange(next)}
         />
       ) : activeFeature === 'team_builder' ? (
         <TeamBuilderPage
           generations={generations}
           generationId={generationId}
-          onGenerationChange={setGenerationId}
-          teamSlots={teamSlots}
-          onTeamSlotsChange={setTeamSlots}
+          onGenerationChange={(next) => void requestGenerationChange(next)}
+          userTeamSlots={teamSlots}
+          onUserTeamChange={setTeamSlots}
+          opponentTeamSlots={opponentTeamSlots}
+          onOpponentTeamChange={setOpponentTeamSlots}
+          userPersistence={bindingFor('user')}
+          opponentPersistence={bindingFor('opponent')}
+        />
+      ) : activeFeature === 'type_coverage' ? (
+        <TypeCoveragePage
+          generations={generations}
+          generationId={generationId}
+          onGenerationChange={(next) => void requestGenerationChange(next)}
+          userTeamSlots={teamSlots}
+          opponentTeamSlots={opponentTeamSlots}
+          selectedSide={coverageSide}
+          onSelectedSideChange={setCoverageSide}
+          mode={coverageMode}
+          onModeChange={setCoverageMode}
+          persistence={identityFor(coverageSide)}
         />
       ) : (
         <TeamMatchupPage
           generations={generations}
           generationId={generationId}
-          onGenerationChange={setGenerationId}
+          onGenerationChange={(next) => void requestGenerationChange(next)}
           userTeamSlots={teamSlots}
-          onUserTeamChange={setTeamSlots}
           opponentTeamSlots={opponentTeamSlots}
-          onOpponentTeamChange={setOpponentTeamSlots}
+          userPersistence={identityFor('user')}
+          opponentPersistence={identityFor('opponent')}
+          direction={matchupDirection}
+          onDirectionChange={setMatchupDirection}
         />
       )}
 
@@ -437,8 +736,61 @@ export function Application() {
           </span>
         )}
       </footer>
+      {workflowNameRequest && (
+        <TeamNameDialog
+          title={`Save ${workflowNameRequest.side === 'user' ? 'Your Team' : 'Opponent Team'}`}
+          value={workflowNameRequest.value}
+          busy={false}
+          error={null}
+          onChange={(value) => setWorkflowNameRequest({ ...workflowNameRequest, value })}
+          onCancel={() => finishTeamNameRequest(null)}
+          onSubmit={() => finishTeamNameRequest(workflowNameRequest.value)}
+        />
+      )}
     </div>
   );
+}
+
+function errorMessage(reason: unknown): string {
+  if (!(reason instanceof Error)) return String(reason);
+  return reason.message.replace(/^Error invoking remote method '[^']+': Error: /, '');
+}
+
+async function showError(title: string, detail: string): Promise<void> {
+  await window.pokemonMatchupFoundry.showMessage({
+    type: 'error',
+    title,
+    message: title,
+    detail,
+    buttons: ['OK'],
+    cancelId: 0,
+  });
+}
+
+function resolveTeamForGeneration(
+  slots: TeamSlot[],
+  optionsByFormId: Map<number, TeamPokemonOption>,
+): TeamSlot[] {
+  return slots.map((slot) => {
+    if (!slot) return null;
+    const option = optionsByFormId.get(slot.formId);
+    if (!option) return slot;
+    const ability = slot.ability
+      ? option.abilities.find(
+        (candidate) => candidate.identifier === slot.ability?.identifier,
+      ) ?? null
+      : null;
+    return {
+      ...slot,
+      pokemonId: option.pokemonId,
+      nationalDexNumber: option.nationalDexNumber,
+      identifier: option.identifier,
+      name: option.name,
+      imagePath: option.imagePath,
+      types: option.types,
+      ability,
+    };
+  });
 }
 
 function SortableHeader({

@@ -1,5 +1,7 @@
 import type { PokemonType } from './pokedex';
 
+export type TeamSide = 'user' | 'opponent';
+
 export type TeamFormCategory =
   | 'standard'
   | 'transformation'
@@ -13,7 +15,7 @@ export interface TeamAbility {
   isHidden: boolean;
 }
 
-export interface TeamBuilderOption {
+export interface TeamPokemonOption {
   formId: number;
   pokemonId: number;
   nationalDexNumber: number;
@@ -38,3 +40,23 @@ export interface TeamMemberSelection {
 }
 
 export type TeamSlot = TeamMemberSelection | null;
+
+export interface SavedTeam {
+  id: string;
+  name: string;
+  generationId: number;
+  createdAt: string;
+  updatedAt: string;
+  slots: TeamSlot[];
+}
+
+export interface SavedTeamCreateInput {
+  name: string;
+  generationId: number;
+  slots: TeamSlot[];
+}
+
+export interface SavedTeamUpdateInput {
+  generationId: number;
+  slots: TeamSlot[];
+}

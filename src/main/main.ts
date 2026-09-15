@@ -4,12 +4,18 @@ import path from 'node:path';
 import {
   app,
   BrowserWindow,
+  dialog,
   ipcMain,
   protocol,
 } from 'electron';
 import started from 'electron-squirrel-startup';
 
-import { closeReferenceDatabase, getReferenceDatabase } from './database/connection';
+import {
+  closeReferenceDatabase,
+  closeUserDataDatabase,
+  getReferenceDatabase,
+  getUserDataDatabase,
+} from './database/connection';
 import {
   datasetInformation,
   listGenerations,
@@ -18,10 +24,26 @@ import {
 } from './database/pokedex_queries';
 import { ipcChannels } from '../shared/ipc/contracts';
 import { getTypeChart } from './database/type_chart_queries';
-import { listTeamBuilderOptions } from './database/team_builder_queries';
+import { listTeamPokemonOptions } from './database/team_pokemon_queries';
+import {
+  createSavedTeam,
+  deleteSavedTeam,
+  listSavedTeams,
+  renameSavedTeam,
+  updateSavedTeam,
+} from './database/saved_team_queries';
+import type {
+  ApplicationMessageRequest,
+} from '../shared/ipc/contracts';
+import type {
+  SavedTeamCreateInput,
+  SavedTeamUpdateInput,
+} from '../shared/models/team';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+
+const approvedToClose = new Set<number>();
 
 if (started) app.quit();
 
@@ -79,12 +101,59 @@ function registerIpcHandlers(): void {
     getTypeChart(getReferenceDatabase(), generationId),
   );
   ipcMain.handle(
-    ipcChannels.listTeamBuilderOptions,
+    ipcChannels.listTeamPokemonOptions,
     (_event, generationId: number) =>
-      listTeamBuilderOptions(getReferenceDatabase(), generationId),
+      listTeamPokemonOptions(getReferenceDatabase(), generationId),
   );
   ipcMain.handle(ipcChannels.datasetInformation, () =>
     datasetInformation(getReferenceDatabase()),
+  );
+  ipcMain.handle(ipcChannels.listSavedTeams, () =>
+    listSavedTeams(getUserDataDatabase()),
+  );
+  ipcMain.handle(
+    ipcChannels.createSavedTeam,
+    (_event, input: SavedTeamCreateInput) =>
+      createSavedTeam(getUserDataDatabase(), input),
+  );
+  ipcMain.handle(
+    ipcChannels.updateSavedTeam,
+    (_event, id: string, input: SavedTeamUpdateInput) =>
+      updateSavedTeam(getUserDataDatabase(), id, input),
+  );
+  ipcMain.handle(
+    ipcChannels.renameSavedTeam,
+    (_event, id: string, name: string) =>
+      renameSavedTeam(getUserDataDatabase(), id, name),
+  );
+  ipcMain.handle(ipcChannels.deleteSavedTeam, (_event, id: string) =>
+    deleteSavedTeam(getUserDataDatabase(), id),
+  );
+  ipcMain.on(ipcChannels.confirmClose, (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (!window) return;
+    approvedToClose.add(window.id);
+    window.close();
+  });
+  ipcMain.handle(
+    ipcChannels.showMessage,
+    async (event, request: ApplicationMessageRequest) => {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        type: request.type,
+        title: request.title,
+        message: request.message,
+        detail: request.detail,
+        buttons: request.buttons,
+        defaultId: request.defaultId ?? 0,
+        cancelId: request.cancelId,
+        noLink: true,
+      } as const;
+      const result = window
+        ? await dialog.showMessageBox(window, options)
+        : await dialog.showMessageBox(options);
+      return result.response;
+    },
   );
 }
 
@@ -105,6 +174,12 @@ function createWindow(): void {
   });
 
   void window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  window.on('close', (event) => {
+    if (approvedToClose.has(window.id)) return;
+    event.preventDefault();
+    window.webContents.send(ipcChannels.requestClose);
+  });
+  window.on('closed', () => approvedToClose.delete(window.id));
 }
 
 app.whenReady().then(() => {
@@ -119,5 +194,6 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   closeReferenceDatabase();
+  closeUserDataDatabase();
   if (process.platform !== 'darwin') app.quit();
 });

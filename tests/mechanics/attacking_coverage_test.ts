@@ -5,8 +5,9 @@ import { databasePath } from '../../scripts/database/source_data';
 import { getTypeChart } from '../../src/main/database/type_chart_queries';
 import {
   attackingAbilitySupport,
+  calculateOffensiveCoverageMultiplier,
   calculateTeamMatchupMultiplier,
-} from '../../src/shared/mechanics/team_matchup';
+} from '../../src/shared/mechanics/attacking_coverage';
 import type { TeamMemberSelection } from '../../src/shared/models/team';
 import type { TypeChart } from '../../src/shared/models/type_effectiveness';
 
@@ -50,7 +51,7 @@ function matchup(
   );
 }
 
-describe('two-sided Team Matchup mechanics', () => {
+describe('shared attacking coverage mechanics', () => {
   let database: Database.Database;
 
   beforeAll(() => {
@@ -121,5 +122,54 @@ describe('two-sided Team Matchup mechanics', () => {
     expect(attackingAbilitySupport('tinted-lens')).toBe('supported');
     expect(attackingAbilitySupport('blaze')).toBe('conditional_unmodeled');
     expect(attackingAbilitySupport('overcoat')).toBe('not_applicable');
+  });
+
+  it('calculates Offensive Coverage against one defending type', () => {
+    const chart = getTypeChart(database, 9);
+    const fire = chart.types.find((type) => type.identifier === 'fire')!;
+    const grass = chart.types.find((type) => type.identifier === 'grass')!;
+    const water = chart.types.find((type) => type.identifier === 'water')!;
+
+    expect(
+      calculateOffensiveCoverageMultiplier(
+        chart,
+        fire.id,
+        member(chart, ['normal']),
+        grass,
+      ),
+    ).toEqual({ numerator: 2, denominator: 1 });
+    expect(
+      calculateOffensiveCoverageMultiplier(
+        chart,
+        fire.id,
+        member(chart, ['normal'], 'tinted-lens'),
+        water,
+      ),
+    ).toEqual({ numerator: 1, denominator: 1 });
+  });
+
+  it('applies attacker immunity bypass and type boosts in Offensive Coverage', () => {
+    const chart = getTypeChart(database, 9);
+    const normal = chart.types.find((type) => type.identifier === 'normal')!;
+    const ghost = chart.types.find((type) => type.identifier === 'ghost')!;
+    const water = chart.types.find((type) => type.identifier === 'water')!;
+    const fire = chart.types.find((type) => type.identifier === 'fire')!;
+
+    expect(
+      calculateOffensiveCoverageMultiplier(
+        chart,
+        normal.id,
+        member(chart, ['normal'], 'scrappy'),
+        ghost,
+      ),
+    ).toEqual({ numerator: 1, denominator: 1 });
+    expect(
+      calculateOffensiveCoverageMultiplier(
+        chart,
+        water.id,
+        member(chart, ['normal'], 'water-bubble'),
+        fire,
+      ),
+    ).toEqual({ numerator: 4, denominator: 1 });
   });
 });

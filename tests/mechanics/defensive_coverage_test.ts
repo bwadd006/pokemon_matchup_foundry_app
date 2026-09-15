@@ -3,11 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { databasePath } from '../../scripts/database/source_data';
 import { getTypeChart } from '../../src/main/database/type_chart_queries';
-import { listTeamBuilderOptions } from '../../src/main/database/team_builder_queries';
-import { calculateDefensiveMultiplier } from '../../src/shared/mechanics/team_builder';
-import type { TeamBuilderOption, TeamMemberSelection } from '../../src/shared/models/team';
+import { listTeamPokemonOptions } from '../../src/main/database/team_pokemon_queries';
+import { calculateDefensiveCoverageMultiplier } from '../../src/shared/mechanics/defensive_coverage';
+import type { TeamMemberSelection, TeamPokemonOption } from '../../src/shared/models/team';
 
-function select(option: TeamBuilderOption, abilityIdentifier: string | null = null): TeamMemberSelection {
+function select(option: TeamPokemonOption, abilityIdentifier: string | null = null): TeamMemberSelection {
   return {
     formId: option.formId,
     pokemonId: option.pokemonId,
@@ -21,7 +21,7 @@ function select(option: TeamBuilderOption, abilityIdentifier: string | null = nu
   };
 }
 
-describe('Team Builder defensive calculations', () => {
+describe('Defensive Coverage calculations', () => {
   let database: Database.Database;
 
   beforeAll(() => {
@@ -32,24 +32,24 @@ describe('Team Builder defensive calculations', () => {
 
   it('combines both of Charizard’s types', () => {
     const chart = getTypeChart(database, 9);
-    const charizard = listTeamBuilderOptions(database, 9).find(
+    const charizard = listTeamPokemonOptions(database, 9).find(
       (option) => option.identifier === 'charizard',
     )!;
     const rock = chart.types.find((type) => type.identifier === 'rock')!;
     const ground = chart.types.find((type) => type.identifier === 'ground')!;
 
-    expect(calculateDefensiveMultiplier(chart, rock.id, select(charizard))).toEqual({ numerator: 4, denominator: 1 });
-    expect(calculateDefensiveMultiplier(chart, ground.id, select(charizard))).toEqual({ numerator: 0, denominator: 1 });
+    expect(calculateDefensiveCoverageMultiplier(chart, rock.id, select(charizard))).toEqual({ numerator: 4, denominator: 1 });
+    expect(calculateDefensiveCoverageMultiplier(chart, ground.id, select(charizard))).toEqual({ numerator: 0, denominator: 1 });
   });
 
   it('applies the selected ability after dual-type effectiveness', () => {
     const chart = getTypeChart(database, 4);
-    const gengar = listTeamBuilderOptions(database, 4).find(
+    const gengar = listTeamPokemonOptions(database, 4).find(
       (option) => option.identifier === 'gengar',
     )!;
     const ground = chart.types.find((type) => type.identifier === 'ground')!;
 
-    expect(calculateDefensiveMultiplier(chart, ground.id, select(gengar))).toEqual({ numerator: 2, denominator: 1 });
-    expect(calculateDefensiveMultiplier(chart, ground.id, select(gengar, 'levitate'))).toEqual({ numerator: 0, denominator: 1 });
+    expect(calculateDefensiveCoverageMultiplier(chart, ground.id, select(gengar))).toEqual({ numerator: 2, denominator: 1 });
+    expect(calculateDefensiveCoverageMultiplier(chart, ground.id, select(gengar, 'levitate'))).toEqual({ numerator: 0, denominator: 1 });
   });
 });

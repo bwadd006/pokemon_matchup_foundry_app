@@ -1,0 +1,78 @@
+.ability_support_indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.ability_support_trigger {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #fec84b;
+  cursor: help;
+  font-size: 0.7rem;
+  line-height: 20px;
+}
+
+.ability_support_trigger:hover,
+.ability_support_trigger:focus-visible {
+  background: rgba(247, 144, 9, 0.16);
+  outline: 1px solid #f79009;
+}
+
+.ability_support_tooltip {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  width: 260px;
+  display: none;
+  padding: 10px 12px;
+  border: 1px solid #f79009;
+  border-radius: 8px;
+  background: #101828;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  color: #d0d5dd;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  text-transform: none;
+}
+
+.ability_support_tooltip strong,
+.ability_support_tooltip span {
+  display: block;
+}
+
+.ability_support_tooltip strong {
+  margin-bottom: 4px;
+  color: #fec84b;
+}
+
+.ability_support_indicator:hover .ability_support_tooltip,
+.ability_support_indicator:focus-within .ability_support_tooltip {
+  display: block;
+}
+
+.ability_display {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  overflow: visible !important;
+}
+
+.ability_selector_control {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.ability_selector_control select {
+  flex: 1 1 auto;
+}

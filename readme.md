@@ -9,9 +9,23 @@ Marriland, or PokéAPI.
 
 The current alpha builds a versioned SQLite reference database from a pinned
 PokéAPI data snapshot and uses it for a generation-aware National Pokédex,
-single-type effectiveness chart, six-slot defensive Team Builder, and
-bidirectional Team Matchup analysis with supported attacker and defender
-ability effects.
+single-type effectiveness chart, dedicated Team Builder, six-slot Type
+Coverage, and bidirectional Team Matchup analysis with supported attacker and
+defender ability effects. Team Builder manages both active teams and can
+create, update, find, load, rename, and delete persistent named teams stored
+locally for the current operating-system user. Type Coverage and Team Matchup
+read those shared teams without duplicating their edit controls.
+
+Type Coverage includes Defensive Coverage and Offensive Coverage page modes.
+The offensive mode shows all six team-slot groups with four attack-type rows
+each against individual defending types. Team Matchup uses the same fixed
+six-by-four attacking layout in either direction.
+
+Team Builder appears between Type Chart and Type Coverage, displays Your Team
+and Opponent Team simultaneously, and centralizes Pokémon, ability,
+attacking-type, and saved-team editing. Type Coverage and Team Matchup are
+read-only analysis pages that retain their generation and analysis-direction
+controls.
 
 ## Requirements
 

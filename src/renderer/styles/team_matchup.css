@@ -296,6 +296,10 @@
   text-overflow: ellipsis;
 }
 
+.matchup_attacker_empty {
+  color: var(--muted);
+}
+
 .matchup_attacker_header small {
   margin-top: 3px;
   color: var(--muted);
@@ -344,4 +348,29 @@
 .empty_move_label {
   color: #667085;
   font-weight: 700;
+}
+.matchup_identity_summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(22, 27, 38, 0.72);
+}
+
+.matchup_identity_summary > div {
+  display: grid;
+  gap: 3px;
+}
+
+.matchup_identity_summary > div:last-child {
+  text-align: right;
+}
+
+.matchup_identity_summary small,
+.matchup_identity_summary > span {
+  color: var(--muted);
 }
