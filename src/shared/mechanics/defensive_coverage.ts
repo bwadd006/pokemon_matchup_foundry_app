@@ -3,7 +3,7 @@ import type { TypeChart } from '../models/type_effectiveness';
 import { applyDefensiveAbility } from './ability_effects';
 import { combineMultipliers, type ExactMultiplier } from './type_effectiveness';
 
-export function calculateDefensiveMultiplier(
+export function calculateDefensiveCoverageMultiplier(
   chart: TypeChart,
   attackingTypeId: number,
   member: TeamMemberSelection,

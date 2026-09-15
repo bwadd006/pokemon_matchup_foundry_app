@@ -111,7 +111,7 @@ function abilityIsActive(identifier: string | null, generationId: number): boole
 function baseTypeMultiplier(
   chart: TypeChart,
   attackingTypeId: number,
-  defender: TeamMemberSelection,
+  defendingTypes: TeamMemberSelection['types'],
   attackerAbilityIdentifier: string | null,
 ): ExactMultiplier | undefined {
   const attackingType = chart.types.find((type) => type.id === attackingTypeId);
@@ -122,7 +122,7 @@ function baseTypeMultiplier(
     ghostImmunityBypass.has(attackerAbilityIdentifier ?? '') &&
     (attackingType.identifier === 'normal' || attackingType.identifier === 'fighting');
 
-  const entries = defender.types.map((defendingType) => {
+  const entries = defendingTypes.map((defendingType) => {
     if (bypassesGhost && defendingType.identifier === 'ghost') {
       return neutral;
     }
@@ -254,7 +254,7 @@ export function calculateTeamMatchupMultiplier(
   const baseMultiplier = baseTypeMultiplier(
     chart,
     attackingTypeId,
-    defender,
+    defender.types,
     attackerAbilityIdentifier,
   );
   if (!baseMultiplier) return undefined;
@@ -276,6 +276,34 @@ export function calculateTeamMatchupMultiplier(
     attackingTypeIdentifier: attackingType.identifier,
     attackerAbilityIdentifier,
     defenderAbilityIdentifier,
+    generationId: chart.generationId,
+  });
+}
+
+export function calculateOffensiveCoverageMultiplier(
+  chart: TypeChart,
+  attackingTypeId: number,
+  attacker: TeamMemberSelection,
+  defendingType: TeamMemberSelection['types'][number],
+): ExactMultiplier | undefined {
+  const attackingType = chart.types.find((type) => type.id === attackingTypeId);
+  if (!attackingType) return undefined;
+
+  const attackerAbilityIdentifier = attacker.ability?.identifier ?? null;
+  const baseMultiplier = baseTypeMultiplier(
+    chart,
+    attackingTypeId,
+    [defendingType],
+    attackerAbilityIdentifier,
+  );
+  if (!baseMultiplier) return undefined;
+
+  return applyAttackingAbility({
+    multiplier: baseMultiplier,
+    baseMultiplier,
+    attackingTypeIdentifier: attackingType.identifier,
+    attackerAbilityIdentifier,
+    defenderAbilityIdentifier: null,
     generationId: chart.generationId,
   });
 }

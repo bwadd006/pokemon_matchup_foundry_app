@@ -5,7 +5,10 @@ import './styles/global.css';
 import './styles/types.css';
 import './styles/type_chart.css';
 import './styles/team_builder.css';
+import './styles/type_coverage.css';
 import './styles/team_matchup.css';
+import './styles/saved_teams.css';
+import './styles/ability_support.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing application root.');

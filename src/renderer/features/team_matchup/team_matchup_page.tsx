@@ -1,66 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { Generation, PokemonType } from '../../../shared/models/pokedex';
+import type { Generation } from '../../../shared/models/pokedex';
 import type {
-  TeamAbility,
-  TeamBuilderOption,
   TeamMemberSelection,
+  TeamPokemonOption,
   TeamSlot,
 } from '../../../shared/models/team';
 import type { TypeChart } from '../../../shared/models/type_effectiveness';
-import { abilitySupport } from '../../../shared/mechanics/ability_effects';
-import {
-  attackingAbilitySupport,
-  calculateTeamMatchupMultiplier,
-} from '../../../shared/mechanics/team_matchup';
+import { fixedAttackingSlots, normalizedAttackTypes } from '../../../shared/team_slots';
+import { calculateTeamMatchupMultiplier } from '../../../shared/mechanics/attacking_coverage';
 import {
   compareMultiplier,
   formatMultiplier,
   type ExactMultiplier,
 } from '../../../shared/mechanics/type_effectiveness';
 import { GenerationSelector } from '../../components/generation_selector';
+import { humanizeTypeIdentifier } from '../../components/attacking_type_editor';
+import { AbilitySupportIndicator } from '../../components/ability_support_indicator';
 import { PokemonImage } from '../../components/pokemon_image';
-import { PokemonSelector } from '../../components/pokemon_selector';
+import {
+  activeTeamHeading,
+  activeTeamStatus,
+  type TeamIdentityBinding,
+} from '../../components/saved_team_file_bar';
 import { TypeBadge } from '../../components/type_badge';
 
-type AttackDirection = 'opponent' | 'user';
-
-interface TeamEditorProps {
-  title: string;
-  teamLabel: string;
-  slots: TeamSlot[];
-  options: TeamBuilderOption[];
-  optionByFormId: Map<number, TeamBuilderOption>;
-  types: PokemonType[];
-  generationId: number;
-  onChange: (slots: TeamSlot[]) => void;
-}
+export type AttackDirection = 'opponent' | 'user';
 
 interface MatchupSlot {
   slotIndex: number;
   selection: TeamMemberSelection | null;
-  option: TeamBuilderOption | null;
+  option: TeamPokemonOption | null;
 }
 
 const neutral: ExactMultiplier = { numerator: 1, denominator: 1 };
 
-function selectionFromOption(option: TeamBuilderOption): TeamMemberSelection {
-  return {
-    formId: option.formId,
-    pokemonId: option.pokemonId,
-    nationalDexNumber: option.nationalDexNumber,
-    identifier: option.identifier,
-    name: option.name,
-    imagePath: option.imagePath,
-    types: option.types,
-    ability: null,
-    attackingTypeIdentifiers: [null, null, null, null],
-  };
-}
-
 function currentSelection(
   selection: TeamMemberSelection,
-  option: TeamBuilderOption,
+  option: TeamPokemonOption,
 ): TeamMemberSelection {
   const abilityValid = selection.ability
     ? option.abilities.some((ability) => ability.id === selection.ability?.id)
@@ -74,20 +51,6 @@ function currentSelection(
   };
 }
 
-
-function normalizedAttackTypes(selection: TeamMemberSelection): Array<string | null> {
-  return Array.from(
-    { length: 4 },
-    (_entry, index) => selection.attackingTypeIdentifiers[index] ?? null,
-  );
-}
-
-function humanize(identifier: string): string {
-  return identifier
-    .split('-')
-    .map((part) => part ? part[0]!.toUpperCase() + part.slice(1) : part)
-    .join(' ');
-}
 
 function multiplierKind(multiplier: ExactMultiplier | undefined): string {
   if (!multiplier) return 'unavailable';
@@ -103,21 +66,24 @@ export function TeamMatchupPage({
   generationId,
   onGenerationChange,
   userTeamSlots,
-  onUserTeamChange,
   opponentTeamSlots,
-  onOpponentTeamChange,
+  userPersistence,
+  opponentPersistence,
+  direction,
+  onDirectionChange,
 }: {
   generations: Generation[];
   generationId: number;
   onGenerationChange: (generationId: number) => void;
   userTeamSlots: TeamSlot[];
-  onUserTeamChange: (slots: TeamSlot[]) => void;
   opponentTeamSlots: TeamSlot[];
-  onOpponentTeamChange: (slots: TeamSlot[]) => void;
+  userPersistence: TeamIdentityBinding;
+  opponentPersistence: TeamIdentityBinding;
+  direction: AttackDirection;
+  onDirectionChange: (direction: AttackDirection) => void;
 }) {
-  const [options, setOptions] = useState<TeamBuilderOption[]>([]);
+  const [options, setOptions] = useState<TeamPokemonOption[]>([]);
   const [chart, setChart] = useState<TypeChart | null>(null);
-  const [direction, setDirection] = useState<AttackDirection>('opponent');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -125,7 +91,7 @@ export function TeamMatchupPage({
     setLoading(true);
     setError(null);
     void Promise.all([
-      window.pokemonMatchupFoundry.listTeamBuilderOptions(generationId),
+      window.pokemonMatchupFoundry.listTeamPokemonOptions(generationId),
       window.pokemonMatchupFoundry.getTypeChart(generationId),
     ])
       .then(([nextOptions, nextChart]) => {
@@ -146,8 +112,8 @@ export function TeamMatchupPage({
   );
   const attackingSlots = direction === 'opponent' ? opponentTeamSlots : userTeamSlots;
   const defendingSlots = direction === 'opponent' ? userTeamSlots : opponentTeamSlots;
-  const attackingLabel = direction === 'opponent' ? 'Opponent' : 'Your Team';
-  const defendingLabel = direction === 'opponent' ? 'Your Team' : 'Opponent';
+  const attackingLabel = direction === 'opponent' ? 'Opponent Team' : 'Your Team';
+  const defendingLabel = direction === 'opponent' ? 'Your Team' : 'Opponent Team';
 
   return (
     <main className="team_matchup_page">
@@ -167,26 +133,11 @@ export function TeamMatchupPage({
         />
       </section>
 
-      <TeamEditor
-        title="Your Team"
-        teamLabel="your team"
-        slots={userTeamSlots}
-        options={options}
-        optionByFormId={optionByFormId}
-        types={chart?.types ?? []}
-        generationId={generationId}
-        onChange={onUserTeamChange}
-      />
-      <TeamEditor
-        title="Opponent"
-        teamLabel="opponent"
-        slots={opponentTeamSlots}
-        options={options}
-        optionByFormId={optionByFormId}
-        types={chart?.types ?? []}
-        generationId={generationId}
-        onChange={onOpponentTeamChange}
-      />
+      <section className="matchup_identity_summary" aria-label="Active teams">
+        <TeamIdentity side="user" binding={userPersistence} />
+        <span aria-hidden="true">vs.</span>
+        <TeamIdentity side="opponent" binding={opponentPersistence} />
+      </section>
 
       <section className="matchup_direction_bar" aria-label="Attack direction">
         <div>
@@ -196,9 +147,9 @@ export function TeamMatchupPage({
         </div>
         <button
           type="button"
-          onClick={() => setDirection((current) => current === 'opponent' ? 'user' : 'opponent')}
+          onClick={() => onDirectionChange(direction === 'opponent' ? 'user' : 'opponent')}
         >
-          Switch to {direction === 'opponent' ? 'Your Team' : 'Opponent'} Attacking
+          Switch to {direction === 'opponent' ? 'Your Team' : 'Opponent Team'} Attacking
         </button>
       </section>
 
@@ -233,164 +184,19 @@ export function TeamMatchupPage({
   );
 }
 
-function TeamEditor({
-  title,
-  teamLabel,
-  slots,
-  options,
-  optionByFormId,
-  types,
-  generationId,
-  onChange,
-}: TeamEditorProps) {
-  function updateSlot(slotIndex: number, selection: TeamSlot): void {
-    const next = [...slots];
-    next[slotIndex] = selection;
-    onChange(next);
-  }
-
-  function updateMember(slotIndex: number, update: Partial<TeamMemberSelection>): void {
-    const member = slots[slotIndex];
-    if (!member) return;
-    updateSlot(slotIndex, { ...member, ...update });
-  }
-
-  function chooseAbility(slotIndex: number, identifier: string): void {
-    const member = slots[slotIndex];
-    if (!member) return;
-    const option = optionByFormId.get(member.formId);
-    const ability = option?.abilities.find((entry) => entry.identifier === identifier) ?? null;
-    updateMember(slotIndex, { ability });
-  }
-
-  function setAttackType(
-    slotIndex: number,
-    entryIndex: number,
-    identifier: string,
-  ): void {
-    const member = slots[slotIndex];
-    if (!member) return;
-    const entries = normalizedAttackTypes(member);
-    entries[entryIndex] = identifier || null;
-    updateMember(slotIndex, { attackingTypeIdentifiers: entries });
-  }
-
+function TeamIdentity({
+  side,
+  binding,
+}: {
+  side: 'user' | 'opponent';
+  binding: TeamIdentityBinding;
+}) {
+  const status = activeTeamStatus(binding);
   return (
-    <section className="matchup_team_editor" aria-label={`${title} editor`}>
-      <div className="matchup_team_heading">
-        <div>
-          <p className="section_label">Team setup</p>
-          <h3>{title}</h3>
-        </div>
-        <span>Up to four attacking types per Pokémon</span>
-      </div>
-      <div className="team_slots matchup_team_slots">
-        {slots.map((selection, slotIndex) => {
-          const option = selection ? optionByFormId.get(selection.formId) : undefined;
-          const unavailable = Boolean(selection && !option);
-          const abilityValid = Boolean(
-            selection?.ability &&
-            option?.abilities.some((ability) => ability.id === selection.ability?.id),
-          );
-          const ability = abilityValid ? selection?.ability ?? null : null;
-          const defensiveSupport = ability ? abilitySupport(ability.identifier) : 'not_applicable';
-          const attackingSupport = ability ? attackingAbilitySupport(ability.identifier) : 'not_applicable';
-          const partial = defensiveSupport === 'partially_supported';
-          const unmodeled =
-            defensiveSupport === 'conditional_unmodeled' ||
-            attackingSupport === 'conditional_unmodeled';
-
-          return (
-            <article className={`team_slot matchup_team_slot ${unavailable ? 'team_slot_unavailable' : ''}`} key={slotIndex}>
-              <div className="team_slot_heading">
-                <span>Slot {slotIndex + 1}</span>
-                {selection && (
-                  <button type="button" onClick={() => updateSlot(slotIndex, null)}>Clear</button>
-                )}
-              </div>
-              {!selection ? (
-                <PokemonSelector
-                  options={options}
-                  onSelect={(selected) => updateSlot(slotIndex, selectionFromOption(selected))}
-                />
-              ) : (
-                <>
-                  <div className="team_slot_identity matchup_slot_identity">
-                    <PokemonImage imagePath={option?.imagePath ?? selection.imagePath} name={option?.name ?? selection.name} />
-                    <div>
-                      <strong>{option?.name ?? selection.name}</strong>
-                      <small>#{String(selection.nationalDexNumber).padStart(4, '0')}</small>
-                      <div className="team_slot_types">
-                        {(option?.types ?? selection.types).map((type) => (
-                          <TypeBadge key={type.identifier} name={type.name} identifier={type.identifier} compact />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  {unavailable ? (
-                    <p className="slot_warning">Unavailable in Generation {generationId}; excluded from calculations.</p>
-                  ) : (
-                    <>
-                      <label className="ability_selector">
-                        <span>Ability</span>
-                        <select value={ability?.identifier ?? ''} onChange={(event) => chooseAbility(slotIndex, event.target.value)}>
-                          <option value="">—</option>
-                          {option!.abilities.map((entry) => (
-                            <option key={entry.id} value={entry.identifier}>
-                              {entry.name}{entry.isHidden ? ' (Hidden)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {selection.ability && !abilityValid && (
-                        <p className="slot_warning">That ability is unavailable in Generation {generationId}; no effect is applied.</p>
-                      )}
-                      {partial && <p className="slot_notice">Type-based effects are applied; conditional effects are not modeled.</p>}
-                      {!partial && unmodeled && <p className="slot_notice">This ability depends on battle details, so its effects are not modeled.</p>}
-                      <fieldset className="attack_type_editor">
-                        <legend>Attacking types</legend>
-                        <ol>
-                          {normalizedAttackTypes(selection).map((identifier, entryIndex) => {
-                            const type = identifier
-                              ? types.find((entry) => entry.identifier === identifier)
-                              : undefined;
-                            const invalid = Boolean(identifier && !type);
-                            return (
-                              <li key={entryIndex} className={invalid ? 'attack_type_invalid' : ''}>
-                                <label>
-                                  <span>Move {entryIndex + 1}</span>
-                                  <select
-                                    value={identifier ?? ''}
-                                    aria-label={`Move ${entryIndex + 1} attacking type for ${selection.name} on ${teamLabel}`}
-                                    onChange={(event) => setAttackType(slotIndex, entryIndex, event.target.value)}
-                                  >
-                                    <option value="">—</option>
-                                    {invalid && <option value={identifier!}>{humanize(identifier!)} (Unavailable)</option>}
-                                    {types.map((entry) => <option key={entry.id} value={entry.identifier}>{entry.name}</option>)}
-                                  </select>
-                                </label>
-                                <button
-                                  type="button"
-                                  disabled={!identifier}
-                                  aria-label={`Clear Move ${entryIndex + 1} attacking type`}
-                                  onClick={() => setAttackType(slotIndex, entryIndex, '')}
-                                >
-                                  ×
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ol>
-                      </fieldset>
-                    </>
-                  )}
-                </>
-              )}
-            </article>
-          );
-        })}
-      </div>
-    </section>
+    <div>
+      <strong>{activeTeamHeading(side, binding.savedTeam)}</strong>
+      <small>{status ?? (binding.savedTeam ? 'Saved state current' : 'Not saved')}</small>
+    </div>
   );
 }
 
@@ -405,22 +211,24 @@ function MatchupTable({
   chart: TypeChart;
   attackingSlots: TeamSlot[];
   defendingSlots: TeamSlot[];
-  optionByFormId: Map<number, TeamBuilderOption>;
+  optionByFormId: Map<number, TeamPokemonOption>;
   attackingLabel: string;
   defendingLabel: string;
 }) {
-  const attackers: MatchupSlot[] = attackingSlots
-    .map((selection, slotIndex) => ({
+  const attackers: MatchupSlot[] = fixedAttackingSlots(attackingSlots).map(
+    ({ selection, slotIndex }) => ({
       slotIndex,
       selection,
       option: selection ? optionByFormId.get(selection.formId) ?? null : null,
-    }))
-    .filter((slot) => slot.selection !== null);
-  const defenders: MatchupSlot[] = defendingSlots.map((selection, slotIndex) => ({
-    slotIndex,
-    selection,
-    option: selection ? optionByFormId.get(selection.formId) ?? null : null,
-  }));
+    }),
+  );
+  const defenders: MatchupSlot[] = fixedAttackingSlots(defendingSlots).map(
+    ({ selection, slotIndex }) => ({
+      slotIndex,
+      selection,
+      option: selection ? optionByFormId.get(selection.formId) ?? null : null,
+    }),
+  );
 
   return (
     <div className="team_matchup_table_container">
@@ -438,18 +246,15 @@ function MatchupTable({
           </tr>
         </thead>
         <tbody>
-          {attackers.length === 0 ? (
-            <tr>
-              <td className="matchup_empty_rows" colSpan={8}>
-                Add at least one attacking type to a Pokémon on the active attacking team.
-              </td>
-            </tr>
-          ) : attackers.flatMap((attackerSlot) => {
-            const selection = attackerSlot.selection!;
-            const attacker = attackerSlot.option
+          {attackers.flatMap((attackerSlot) => {
+            const selection = attackerSlot.selection;
+            const attacker = selection && attackerSlot.option
               ? currentSelection(selection, attackerSlot.option)
               : null;
-            return normalizedAttackTypes(selection).map((identifier, entryIndex) => {
+            const attackingTypes = selection
+              ? normalizedAttackTypes(selection)
+              : [null, null, null, null];
+            return attackingTypes.map((identifier, entryIndex) => {
               const attackingType = identifier
                 ? chart.types.find((type) => type.identifier === identifier)
                 : undefined;
@@ -459,18 +264,42 @@ function MatchupTable({
                   className={`${entryIndex === 0 ? 'matchup_group_start' : ''} ${entryIndex === 3 ? 'matchup_group_end' : ''}`.trim()}
                 >
                   {entryIndex === 0 && (
-                    <th className="matchup_attacker_header" scope="rowgroup" rowSpan={4}>
-                      <PokemonImage imagePath={attackerSlot.option?.imagePath ?? selection.imagePath} name={attackerSlot.option?.name ?? selection.name} />
-                      <strong>{attackerSlot.option?.name ?? selection.name}</strong>
-                      <small>Slot {attackerSlot.slotIndex + 1}</small>
-                      <small>{attackerSlot.option ? (attacker?.ability?.name ?? '—') : 'Unavailable'}</small>
+                    <th
+                      className={`matchup_attacker_header ${selection ? '' : 'matchup_attacker_empty'}`.trim()}
+                      scope="rowgroup"
+                      rowSpan={4}
+                    >
+                      {selection ? (
+                        <>
+                          <PokemonImage
+                            imagePath={attackerSlot.option?.imagePath ?? selection.imagePath}
+                            name={attackerSlot.option?.name ?? selection.name}
+                          />
+                          <strong>{attackerSlot.option?.name ?? selection.name}</strong>
+                          <small>Slot {attackerSlot.slotIndex + 1}</small>
+                          <small className="ability_display">
+                            {attackerSlot.option ? (attacker?.ability?.name ?? '—') : 'Unavailable'}
+                            {attackerSlot.option && (
+                              <AbilitySupportIndicator
+                                abilityIdentifier={attacker?.ability?.identifier ?? null}
+                                context="offensive"
+                              />
+                            )}
+                          </small>
+                        </>
+                      ) : (
+                        <>
+                          <strong>Slot {attackerSlot.slotIndex + 1}</strong>
+                          <small>Empty</small>
+                        </>
+                      )}
                     </th>
                   )}
                   <th className="matchup_attack_type" scope="row">
                     {attackingType ? (
                       <TypeBadge name={attackingType.name} identifier={attackingType.identifier} compact />
                     ) : identifier ? (
-                      <span>{humanize(identifier)}<small>Unavailable</small></span>
+                      <span>{humanizeTypeIdentifier(identifier)}<small>Unavailable</small></span>
                     ) : (
                       <span className="empty_move_label">—</span>
                     )}
@@ -482,7 +311,7 @@ function MatchupTable({
                     const value = attacker && defender && attackingType
                       ? calculateTeamMatchupMultiplier(chart, attackingType.id, attacker, defender)
                       : undefined;
-                    const kind = !identifier
+                    const kind = !selection || !identifier
                       ? 'empty'
                       : value
                         ? multiplierKind(value)
@@ -491,8 +320,12 @@ function MatchupTable({
                           : 'empty';
                     const text = value ? formatMultiplier(value) : '—';
                     const defenderName = defenderSlot.selection?.name ?? `Slot ${defenderSlot.slotIndex + 1}`;
-                    const attackName = identifier ? humanize(identifier) : `Move ${entryIndex + 1}`;
-                    const description = !identifier
+                    const attackName = identifier
+                      ? humanizeTypeIdentifier(identifier)
+                      : `Move ${entryIndex + 1}`;
+                    const description = !selection
+                      ? 'empty attacking Pokémon slot'
+                      : !identifier
                       ? 'empty attacking type slot'
                       : !defenderSlot.selection
                       ? 'empty defender slot'
@@ -505,8 +338,8 @@ function MatchupTable({
                       <td
                         key={defenderSlot.slotIndex}
                         className={`matchup_effectiveness_cell effectiveness_${kind}`}
-                        title={`${attackName} from ${selection.name} attacking ${defenderName}: ${description}`}
-                        aria-label={`${attackName} from ${selection.name} attacking ${defenderName}: ${description}`}
+                        title={`${attackName} from ${selection?.name ?? `Slot ${attackerSlot.slotIndex + 1}`} attacking ${defenderName}: ${description}`}
+                        aria-label={`${attackName} from ${selection?.name ?? `Slot ${attackerSlot.slotIndex + 1}`} attacking ${defenderName}: ${description}`}
                       >
                         {text}
                       </td>
@@ -539,7 +372,15 @@ function DefenderHeader({ slot }: { slot: MatchupSlot }) {
       <div className="team_header_types">
         {current.types.map((type) => <TypeBadge key={type.identifier} name={type.name} identifier={type.identifier} compact />)}
       </div>
-      <small>{slot.option ? (current.ability?.name ?? '—') : 'Unavailable'}</small>
+      <small className="ability_display">
+        {slot.option ? (current.ability?.name ?? '—') : 'Unavailable'}
+        {slot.option && (
+          <AbilitySupportIndicator
+            abilityIdentifier={current.ability?.identifier ?? null}
+            context="defensive"
+          />
+        )}
+      </small>
     </th>
   );
 }

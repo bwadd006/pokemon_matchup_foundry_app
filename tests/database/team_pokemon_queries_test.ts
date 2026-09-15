@@ -2,9 +2,9 @@ import Database from 'better-sqlite3';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { databasePath } from '../../scripts/database/source_data';
-import { listTeamBuilderOptions } from '../../src/main/database/team_builder_queries';
+import { listTeamPokemonOptions } from '../../src/main/database/team_pokemon_queries';
 
-describe('Team Builder database queries', () => {
+describe('shared team Pokémon database queries', () => {
   let database: Database.Database;
 
   beforeAll(() => {
@@ -17,7 +17,7 @@ describe('Team Builder database queries', () => {
   afterAll(() => database.close());
 
   it('returns only battle-relevant forms', () => {
-    const options = listTeamBuilderOptions(database, 9);
+    const options = listTeamPokemonOptions(database, 9);
     expect(options.length).toBeGreaterThan(1000);
     expect(options.every((option) => option.category !== ('cosmetic' as never))).toBe(true);
     expect(options.some((option) => option.category === 'transformation')).toBe(true);
@@ -25,7 +25,7 @@ describe('Team Builder database queries', () => {
   });
 
   it('returns current types and abilities for a selectable Pokémon', () => {
-    const charizard = listTeamBuilderOptions(database, 9).find(
+    const charizard = listTeamPokemonOptions(database, 9).find(
       (option) => option.identifier === 'charizard',
     );
     expect(charizard?.types.map((type) => type.identifier)).toEqual([
@@ -41,7 +41,7 @@ describe('Team Builder database queries', () => {
   });
 
   it('returns no ability choices in Generation I', () => {
-    const bulbasaur = listTeamBuilderOptions(database, 1).find(
+    const bulbasaur = listTeamPokemonOptions(database, 1).find(
       (option) => option.identifier === 'bulbasaur',
     );
     expect(bulbasaur?.abilities).toEqual([]);

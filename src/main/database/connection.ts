@@ -4,7 +4,10 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 
+import { initializeSavedTeamDatabase } from './saved_team_queries';
+
 let referenceDatabase: Database.Database | undefined;
+let userDataDatabase: Database.Database | undefined;
 
 type DatabaseConstructor = typeof Database;
 
@@ -66,4 +69,22 @@ export function getReferenceDatabase(): Database.Database {
 export function closeReferenceDatabase(): void {
   referenceDatabase?.close();
   referenceDatabase = undefined;
+}
+
+export function getUserDataDatabase(): Database.Database {
+  if (userDataDatabase) return userDataDatabase;
+
+  const databasePath = path.join(app.getPath('userData'), 'user_data.sqlite');
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+  const DatabaseConstructor = loadDatabaseConstructor();
+  userDataDatabase = new DatabaseConstructor(databasePath);
+  userDataDatabase.pragma('journal_mode = WAL');
+  userDataDatabase.pragma('foreign_keys = ON');
+  initializeSavedTeamDatabase(userDataDatabase);
+  return userDataDatabase;
+}
+
+export function closeUserDataDatabase(): void {
+  userDataDatabase?.close();
+  userDataDatabase = undefined;
 }

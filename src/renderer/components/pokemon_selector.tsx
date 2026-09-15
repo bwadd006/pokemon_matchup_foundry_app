@@ -1,13 +1,13 @@
 import { useId, useMemo, useState } from 'react';
 
-import type { TeamBuilderOption } from '../../shared/models/team';
+import type { TeamPokemonOption } from '../../shared/models/team';
 
 export function PokemonSelector({
   options,
   onSelect,
 }: {
-  options: TeamBuilderOption[];
-  onSelect: (option: TeamBuilderOption) => void;
+  options: TeamPokemonOption[];
+  onSelect: (option: TeamPokemonOption) => void;
 }) {
   const inputId = useId();
   const listId = `${inputId}-results`;
@@ -30,7 +30,7 @@ export function PokemonSelector({
       .slice(0, 8);
   }, [options, query]);
 
-  function choose(option: TeamBuilderOption): void {
+  function choose(option: TeamPokemonOption): void {
     onSelect(option);
     setQuery('');
     setOpen(false);
