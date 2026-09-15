@@ -23,9 +23,10 @@ const config: ForgeConfig = {
       './third_party_notices.md',
     ],
   },
-  // better-sqlite3 v13 ships a Windows Node-API binary. Rebuilding it is
-  // unnecessary on Windows and requires Python and Visual Studio tooling.
-  // Keep the existing rebuild behavior on Linux and macOS.
+  // better-sqlite3 v13 ships target-specific Node-API prebuilds, including
+  // Windows binaries used by ZIPs cross-built on Linux. A native Windows host
+  // can use its packaged prebuild without Python or Visual Studio tooling.
+  // Keep the existing rebuild behavior on Linux and macOS hosts.
   rebuildConfig:
     process.platform === 'win32'
       ? { ignoreModules: ['better-sqlite3'] }

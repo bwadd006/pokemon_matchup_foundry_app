@@ -74,12 +74,20 @@ npm start
 
 ## Build Portable ZIP Archives
 
-Build each archive on its target operating system. The ZIP contains the
-Electron runtime, application, database, images, and native dependencies; the
-recipient does not need Node.js or the source repository. The recipient must
-extract the complete archive before launching the executable.
+Portable ZIP builds are independent of the build host: use `--platform` and
+`--arch` to target Windows or Linux from either operating system. The project
+packages the corresponding Electron runtime and `better-sqlite3` prebuilt
+binary for the selected target. A Windows x64 ZIP built on Linux was verified
+and successfully run on Windows on September 15, 2026.
 
-On 64-bit Windows, run in PowerShell:
+The ZIP contains the Electron runtime, application, database, images, and
+native dependencies; the recipient does not need Node.js or the source
+repository. The recipient must extract the complete archive before launching
+the executable. Test each archive on its target operating system before a
+public release; generating an archive on another OS does not run or sign the
+target executable.
+
+To build the 64-bit Windows ZIP from Windows PowerShell or a Linux shell, run:
 
 ```powershell
 npx electron-forge make --platform win32 --arch x64 --targets "@electron-forge/maker-zip"
@@ -88,14 +96,18 @@ npx electron-forge make --platform win32 --arch x64 --targets "@electron-forge/m
 The archive is written under `out/make/zip/win32/x64/`. After extraction, run
 `pokemon_matchup_foundry.exe`.
 
-On 64-bit Linux, run:
+To build the 64-bit Linux ZIP from Linux or Windows PowerShell, run:
 
 ```sh
-npx electron-forge make --platform linux --arch x64 --targets @electron-forge/maker-zip
+npx electron-forge make --platform linux --arch x64 --targets "@electron-forge/maker-zip"
 ```
 
 The archive is written under `out/make/zip/linux/x64/`. After extraction, run
 the `pokemon_matchup_foundry` executable.
+
+These cross-platform instructions apply to the portable ZIP maker. Installers,
+code signing, and notarization may require target-specific tools or a native
+CI runner.
 
 The generated database, downloaded source cache, provisional images,
 dependencies, and build output are not maintained by hand.
