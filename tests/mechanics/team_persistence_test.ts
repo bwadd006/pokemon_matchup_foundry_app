@@ -66,6 +66,17 @@ describe('active saved-team state', () => {
     ], saved)).toBe(true);
   });
 
+  it('treats a changed team order as an unsaved edit', () => {
+    expect(activeTeamIsDirty(1, [
+      null,
+      member,
+      null,
+      null,
+      null,
+      null,
+    ], saved)).toBe(true);
+  });
+
   it('validates forms, abilities, and attacking types', () => {
     expect(teamIsValidForGeneration(slots, [option], new Set(['grass']))).toBe(true);
     expect(teamIsValidForGeneration(slots, [], new Set(['grass']))).toBe(false);

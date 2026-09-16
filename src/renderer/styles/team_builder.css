@@ -32,8 +32,59 @@
   margin-bottom: 0;
 }
 
+.team_builder_reorder_help {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .team_builder_team_slot {
   min-height: 310px;
+  transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.team_builder_team_slot .team_slot_heading {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.team_builder_team_slot_dragging {
+  opacity: 0.55;
+}
+
+.team_builder_team_slot_drop_target {
+  border-color: #84caff;
+  box-shadow: 0 0 0 2px rgba(132, 202, 255, 0.32);
+}
+
+.team_builder_slot_actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.team_slot_heading .team_builder_drag_handle {
+  cursor: grab;
+  text-transform: none;
+}
+
+.team_slot_heading .team_builder_drag_handle:active {
+  cursor: grabbing;
+}
+
+.team_slot_heading .team_builder_move_button {
+  min-width: 24px;
+  padding-right: 4px;
+  padding-left: 4px;
+  font-size: 0.8rem;
+}
+
+.team_slot_heading button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 .team_builder_slot_identity img {

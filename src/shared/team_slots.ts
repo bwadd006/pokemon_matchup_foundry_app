@@ -30,3 +30,26 @@ export function fixedAttackingSlots(slots: TeamSlot[]): FixedAttackingSlot[] {
     };
   });
 }
+
+export function reorderTeamSlots(
+  slots: TeamSlot[],
+  fromSlotIndex: number,
+  toSlotIndex: number,
+): TeamSlot[] {
+  const fixedSlots = Array.from(
+    { length: TEAM_SLOT_COUNT },
+    (_entry, slotIndex) => slots[slotIndex] ?? null,
+  );
+
+  const indicesAreValid = [fromSlotIndex, toSlotIndex].every(
+    (slotIndex) =>
+      Number.isInteger(slotIndex) && slotIndex >= 0 && slotIndex < TEAM_SLOT_COUNT,
+  );
+  if (!indicesAreValid || fromSlotIndex === toSlotIndex || !fixedSlots[fromSlotIndex]) {
+    return fixedSlots;
+  }
+
+  const [selection] = fixedSlots.splice(fromSlotIndex, 1);
+  fixedSlots.splice(toSlotIndex, 0, selection ?? null);
+  return fixedSlots;
+}

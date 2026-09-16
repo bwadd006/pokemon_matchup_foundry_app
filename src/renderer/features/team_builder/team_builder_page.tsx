@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Generation, PokemonType } from '../../../shared/models/pokedex';
 import type {
@@ -7,7 +7,7 @@ import type {
   TeamSide,
   TeamSlot,
 } from '../../../shared/models/team';
-import { fixedAttackingSlots } from '../../../shared/team_slots';
+import { fixedAttackingSlots, reorderTeamSlots } from '../../../shared/team_slots';
 import { AbilitySupportIndicator } from '../../components/ability_support_indicator';
 import { AttackingTypeEditor } from '../../components/attacking_type_editor';
 import { GenerationSelector } from '../../components/generation_selector';
@@ -159,6 +159,18 @@ function TeamEditor({
   persistence,
 }: TeamEditorProps) {
   const role = side === 'user' ? 'Your Team' : 'Opponent Team';
+  const [draggedSlotIndex, setDraggedSlotIndex] = useState<number | null>(null);
+  const [dropSlotIndex, setDropSlotIndex] = useState<number | null>(null);
+  const [reorderAnnouncement, setReorderAnnouncement] = useState('');
+  const dragHandleRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const pendingFocusSlotIndex = useRef<number | null>(null);
+
+  useEffect(() => {
+    const slotIndex = pendingFocusSlotIndex.current;
+    if (slotIndex === null) return;
+    dragHandleRefs.current[slotIndex]?.focus();
+    pendingFocusSlotIndex.current = null;
+  }, [slots]);
 
   function updateSlot(slotIndex: number, selection: TeamSlot): void {
     const next = [...slots];
@@ -180,6 +192,43 @@ function TeamEditor({
     updateMember(slotIndex, { ability });
   }
 
+  function completeReorder(fromSlotIndex: number, toSlotIndex: number): void {
+    const member = slots[fromSlotIndex];
+    if (!member || fromSlotIndex === toSlotIndex) return;
+
+    pendingFocusSlotIndex.current = toSlotIndex;
+    onChange(reorderTeamSlots(slots, fromSlotIndex, toSlotIndex));
+    setReorderAnnouncement(
+      `${member.name} moved to Slot ${toSlotIndex + 1} in ${role}.`,
+    );
+  }
+
+  function startDragging(event: DragEvent<HTMLButtonElement>, slotIndex: number): void {
+    setDraggedSlotIndex(slotIndex);
+    setDropSlotIndex(slotIndex);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `${side}:${slotIndex}`);
+  }
+
+  function dragOverSlot(event: DragEvent<HTMLElement>, slotIndex: number): void {
+    if (draggedSlotIndex === null) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDropSlotIndex(slotIndex);
+  }
+
+  function dropOnSlot(event: DragEvent<HTMLElement>, slotIndex: number): void {
+    if (draggedSlotIndex === null) return;
+    event.preventDefault();
+    completeReorder(draggedSlotIndex, slotIndex);
+    finishDragging();
+  }
+
+  function finishDragging(): void {
+    setDraggedSlotIndex(null);
+    setDropSlotIndex(null);
+  }
+
   return (
     <section className="team_builder_team_editor" aria-label={`${role} editor`}>
       <div className="team_builder_team_heading">
@@ -195,6 +244,13 @@ function TeamEditor({
         slots={slots}
         {...persistence}
       />
+      <p className="team_builder_reorder_help">
+        Drag a populated Pokémon by its reorder handle, or use Move left and
+        Move right, to change its position.
+      </p>
+      <div className="visually_hidden" role="status" aria-live="polite">
+        {reorderAnnouncement}
+      </div>
       <div className="team_slots team_builder_team_slots">
         {fixedAttackingSlots(slots).map(({ selection, slotIndex }) => {
           const option = selection ? optionByFormId.get(selection.formId) : undefined;
@@ -207,15 +263,53 @@ function TeamEditor({
 
           return (
             <article
-              className={`team_slot team_builder_team_slot ${unavailable ? 'team_slot_unavailable' : ''}`}
+              className={`team_slot team_builder_team_slot ${unavailable ? 'team_slot_unavailable' : ''} ${draggedSlotIndex === slotIndex ? 'team_builder_team_slot_dragging' : ''} ${draggedSlotIndex !== null && dropSlotIndex === slotIndex ? 'team_builder_team_slot_drop_target' : ''}`}
               key={slotIndex}
+              onDragOver={(event) => dragOverSlot(event, slotIndex)}
+              onDrop={(event) => dropOnSlot(event, slotIndex)}
             >
               <div className="team_slot_heading">
                 <span>Slot {slotIndex + 1}</span>
                 {selection && (
-                  <button type="button" onClick={() => updateSlot(slotIndex, null)}>
-                    Clear
-                  </button>
+                  <span className="team_builder_slot_actions">
+                    <button
+                      type="button"
+                      className="team_builder_move_button"
+                      disabled={slotIndex === 0}
+                      aria-label={`Move ${selection.name} left in ${role} from Slot ${slotIndex + 1}`}
+                      title="Move left"
+                      onClick={() => completeReorder(slotIndex, slotIndex - 1)}
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className="team_builder_drag_handle"
+                      draggable
+                      ref={(element) => {
+                        dragHandleRefs.current[slotIndex] = element;
+                      }}
+                      aria-label={`Reorder ${selection.name} in ${role} from Slot ${slotIndex + 1}`}
+                      title="Drag to reorder"
+                      onDragStart={(event) => startDragging(event, slotIndex)}
+                      onDragEnd={finishDragging}
+                    >
+                      Drag
+                    </button>
+                    <button
+                      type="button"
+                      className="team_builder_move_button"
+                      disabled={slotIndex === 5}
+                      aria-label={`Move ${selection.name} right in ${role} from Slot ${slotIndex + 1}`}
+                      title="Move right"
+                      onClick={() => completeReorder(slotIndex, slotIndex + 1)}
+                    >
+                      →
+                    </button>
+                    <button type="button" onClick={() => updateSlot(slotIndex, null)}>
+                      Clear
+                    </button>
+                  </span>
                 )}
               </div>
               {!selection ? (
