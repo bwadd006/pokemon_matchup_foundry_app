@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 import Database from 'better-sqlite3';
 
+import { STANDARD_TYPE_DISPLAY_ORDER } from '../../src/shared/type_order';
 import { databasePath } from './source_data';
 
 interface CountRow {
@@ -87,6 +88,28 @@ try {
     'SELECT COUNT(*) AS count FROM type_chart_rulesets r WHERE (SELECT COUNT(*) FROM type_effectiveness te WHERE te.ruleset_id = r.id) != (SELECT COUNT(*) FROM ruleset_types rt WHERE rt.ruleset_id = r.id) * (SELECT COUNT(*) FROM ruleset_types rt WHERE rt.ruleset_id = r.id)',
   );
   check('Complete type matrices', incompleteMatrices === 0, `${incompleteMatrices} incomplete rulesets`);
+
+  const generationTypeOrder = database.prepare(
+    'SELECT t.identifier FROM generation_types gt JOIN types t ON t.id = gt.type_id WHERE gt.generation_id = 9 ORDER BY gt.display_order',
+  ).all() as Array<{ identifier: string }>;
+  const chartTypeOrder = database.prepare(
+    'SELECT t.identifier FROM generation_type_chart_rulesets gtr JOIN ruleset_types rt ON rt.ruleset_id = gtr.ruleset_id JOIN types t ON t.id = rt.type_id WHERE gtr.generation_id = 9 ORDER BY rt.display_order',
+  ).all() as Array<{ identifier: string }>;
+  const expectedTypeOrder = [...STANDARD_TYPE_DISPLAY_ORDER];
+  const generationOrderMatches = generationTypeOrder
+    .map((entry) => entry.identifier)
+    .every((identifier, index) => identifier === expectedTypeOrder[index]);
+  const chartOrderMatches = chartTypeOrder
+    .map((entry) => entry.identifier)
+    .every((identifier, index) => identifier === expectedTypeOrder[index]);
+  check(
+    'Standard type display order',
+    generationTypeOrder.length === expectedTypeOrder.length
+      && chartTypeOrder.length === expectedTypeOrder.length
+      && generationOrderMatches
+      && chartOrderMatches,
+    generationTypeOrder.map((entry) => entry.identifier).join(', '),
+  );
 
   const clefairyGenFive = database.prepare(
     "SELECT t.identifier FROM pokemon_forms pf JOIN form_types ft ON ft.form_id = pf.id JOIN types t ON t.id = ft.type_id WHERE pf.identifier = 'clefairy' AND ft.generation_id = 5",

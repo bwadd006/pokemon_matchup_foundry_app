@@ -87,25 +87,23 @@ export function TypeChartPage({
     return values;
   }, [chart]);
 
-  const active = hovered ?? locked;
-
   function toggleLocked(next: Highlight): void {
     setLocked((current) => (sameHighlight(current, next) ? null : next));
   }
 
-  function rowIsHighlighted(typeId: number): boolean {
+  function rowIsHighlighted(highlight: Highlight | null, typeId: number): boolean {
     return Boolean(
-      active &&
-        (active.kind === 'row' || active.kind === 'cell') &&
-        active.attackingTypeId === typeId,
+      highlight &&
+        (highlight.kind === 'row' || highlight.kind === 'cell') &&
+        highlight.attackingTypeId === typeId,
     );
   }
 
-  function columnIsHighlighted(typeId: number): boolean {
+  function columnIsHighlighted(highlight: Highlight | null, typeId: number): boolean {
     return Boolean(
-      active &&
-        (active.kind === 'column' || active.kind === 'cell') &&
-        active.defendingTypeId === typeId,
+      highlight &&
+        (highlight.kind === 'column' || highlight.kind === 'cell') &&
+        highlight.defendingTypeId === typeId,
     );
   }
 
@@ -163,12 +161,16 @@ export function TypeChartPage({
                       kind: 'column',
                       defendingTypeId: defendingType.id,
                     };
-                    const highlighted = columnIsHighlighted(defendingType.id);
+                    const hoveredColumn = columnIsHighlighted(hovered, defendingType.id);
+                    const lockedColumn = columnIsHighlighted(locked, defendingType.id);
                     return (
                       <th
                         key={defendingType.id}
                         scope="col"
-                        className={highlighted ? 'chart_highlighted' : ''}
+                        className={[
+                          hoveredColumn ? 'chart_column_hovered' : '',
+                          lockedColumn ? 'chart_column_locked' : '',
+                        ].filter(Boolean).join(' ')}
                       >
                         <button
                           type="button"
@@ -197,12 +199,17 @@ export function TypeChartPage({
                     kind: 'row',
                     attackingTypeId: attackingType.id,
                   };
-                  const rowHighlighted = rowIsHighlighted(attackingType.id);
+                  const hoveredRow = rowIsHighlighted(hovered, attackingType.id);
+                  const lockedRow = rowIsHighlighted(locked, attackingType.id);
                   return (
                     <tr key={attackingType.id}>
                       <th
                         scope="row"
-                        className={`type_chart_row_header ${rowHighlighted ? 'chart_highlighted' : ''}`}
+                        className={[
+                          'type_chart_row_header',
+                          hoveredRow ? 'chart_row_hovered' : '',
+                          lockedRow ? 'chart_row_locked' : '',
+                        ].filter(Boolean).join(' ')}
                       >
                         <button
                           type="button"
@@ -227,9 +234,8 @@ export function TypeChartPage({
                           attackingTypeId: attackingType.id,
                           defendingTypeId: defendingType.id,
                         };
-                        const columnHighlighted = columnIsHighlighted(
-                          defendingType.id,
-                        );
+                        const hoveredColumn = columnIsHighlighted(hovered, defendingType.id);
+                        const lockedColumn = columnIsHighlighted(locked, defendingType.id);
                         return (
                           <EffectivenessCell
                             key={defendingType.id}
@@ -238,8 +244,10 @@ export function TypeChartPage({
                             )}
                             attackingType={attackingType.name}
                             defendingType={defendingType.name}
-                            highlighted={rowHighlighted || columnHighlighted}
-                            intersection={rowHighlighted && columnHighlighted}
+                            rowHovered={hoveredRow}
+                            columnHovered={hoveredColumn}
+                            rowLocked={lockedRow}
+                            columnLocked={lockedColumn}
                             locked={sameHighlight(locked, selection)}
                             onHover={() => setHovered(selection)}
                             onLeave={() => setHovered(null)}

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { databasePath } from '../../scripts/database/source_data';
 import { getTypeChart } from '../../src/main/database/type_chart_queries';
 import type { TypeChart } from '../../src/shared/models/type_effectiveness';
+import { STANDARD_TYPE_DISPLAY_ORDER } from '../../src/shared/type_order';
 
 function multiplier(
   chart: TypeChart,
@@ -68,6 +69,12 @@ describe('Type chart database query', () => {
       numerator: 1,
       denominator: 1,
     });
+  });
+
+  it('returns types in the standard display order', () => {
+    expect(getTypeChart(database, 9).types.map((type) => type.identifier)).toEqual(
+      STANDARD_TYPE_DISPLAY_ORDER,
+    );
   });
 
   it('preserves Generation I matchup rules', () => {

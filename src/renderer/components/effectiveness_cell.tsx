@@ -34,8 +34,10 @@ export function EffectivenessCell({
   matchup,
   attackingType,
   defendingType,
-  highlighted,
-  intersection,
+  rowHovered,
+  columnHovered,
+  rowLocked,
+  columnLocked,
   locked,
   onHover,
   onLeave,
@@ -44,8 +46,10 @@ export function EffectivenessCell({
   matchup: TypeChartMatchup | undefined;
   attackingType: string;
   defendingType: string;
-  highlighted: boolean;
-  intersection: boolean;
+  rowHovered: boolean;
+  columnHovered: boolean;
+  rowLocked: boolean;
+  columnLocked: boolean;
   locked: boolean;
   onHover: () => void;
   onLeave: () => void;
@@ -56,8 +60,10 @@ export function EffectivenessCell({
   const classes = [
     'effectiveness_cell',
     `effectiveness_${value.kind}`,
-    highlighted ? 'chart_highlighted' : '',
-    intersection ? 'chart_intersection' : '',
+    rowHovered ? 'chart_row_hovered' : '',
+    columnHovered ? 'chart_column_hovered' : '',
+    rowLocked ? 'chart_row_locked' : '',
+    columnLocked ? 'chart_column_locked' : '',
   ]
     .filter(Boolean)
     .join(' ');

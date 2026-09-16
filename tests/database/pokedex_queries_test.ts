@@ -8,6 +8,7 @@ import {
   listTypes,
 } from '../../src/main/database/pokedex_queries';
 import { databasePath } from '../../scripts/database/source_data';
+import { STANDARD_TYPE_DISPLAY_ORDER } from '../../src/shared/type_order';
 
 describe('Pokédex database queries', () => {
   let database: Database.Database;
@@ -30,10 +31,11 @@ describe('Pokédex database queries', () => {
 
   it('uses the Generation I type set', () => {
     const types = listTypes(database, 1).map((type) => type.identifier);
-    expect(types).toHaveLength(15);
-    expect(types).not.toContain('dark');
-    expect(types).not.toContain('steel');
-    expect(types).not.toContain('fairy');
+    expect(types).toEqual(
+      STANDARD_TYPE_DISPLAY_ORDER.filter(
+        (identifier) => !['dark', 'steel', 'fairy'].includes(identifier),
+      ),
+    );
   });
 
   it('returns Generation I rows with Special and no abilities', () => {

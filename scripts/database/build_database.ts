@@ -4,6 +4,8 @@ import path from 'node:path';
 
 import Database from 'better-sqlite3';
 
+import { typeDisplayOrder } from '../../src/shared/type_order';
+
 import {
   databasePath,
   englishName,
@@ -382,7 +384,7 @@ const build = database.transaction(() => {
   for (const generation of generations) {
     const available = types
       .filter((type) => resourceId(type.generation) <= generation.id)
-      .sort((left, right) => left.id - right.id);
+      .sort((left, right) => typeDisplayOrder(left.name) - typeDisplayOrder(right.name));
     available.forEach((type, index) => {
       insertGenerationType.run(generation.id, type.id, index + 1);
     });
@@ -570,7 +572,7 @@ const build = database.transaction(() => {
   for (const generation of generations) {
     const available = types
       .filter((type) => resourceId(type.generation) <= generation.id)
-      .sort((left, right) => left.id - right.id);
+      .sort((left, right) => typeDisplayOrder(left.name) - typeDisplayOrder(right.name));
     const matrix: Array<[number, number, number, number]> = [];
 
     for (const attacking of available) {
