@@ -170,7 +170,10 @@ export function TypeCoveragePage({
         )}
       </section>
 
-      <section className="team_coverage_panel" aria-busy={loading}>
+      <section
+        className={`team_coverage_panel ${mode === 'offensive' ? 'wide_data_panel' : ''}`}
+        aria-busy={loading}
+      >
         {error ? (
           <div className="error_state">
             <h3>Type Coverage could not be loaded</h3>
@@ -334,6 +337,13 @@ function OffensiveCoverageTable({
   return (
     <div className="team_coverage_scroller">
       <table className="offensive_coverage_table">
+        <colgroup>
+          <col className="offensive_attacker_column" />
+          <col className="offensive_attack_type_column" />
+          {chart.types.map((type) => (
+            <col key={type.id} className="offensive_defending_type_column" />
+          ))}
+        </colgroup>
         <caption className="visually_hidden">
           Generation {chart.generationId} offensive coverage for {teamLabel}'s six fixed slots
         </caption>

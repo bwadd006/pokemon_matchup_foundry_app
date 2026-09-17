@@ -188,8 +188,9 @@
 
 .team_coverage_scroller {
   min-height: 280px;
-  overflow: visible;
-  overscroll-behavior: contain;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
 }
 
 .team_coverage_table {
@@ -208,7 +209,7 @@
 
 .team_coverage_table thead th {
   position: sticky;
-  top: 84px;
+  top: 0;
   z-index: 5;
   height: 154px;
   padding: 7px;
@@ -227,7 +228,7 @@
 }
 
 .team_coverage_table .team_coverage_corner {
-  top: 84px;
+  top: 0;
   padding: 9px;
   color: var(--muted);
   font-size: 0.63rem;
@@ -325,14 +326,34 @@
 }
 
 .offensive_coverage_table {
-  width: max-content;
-  min-width: 100%;
+  --offensive-attacker-width: 150px;
+  --offensive-attack-type-width: 112px;
+  --offensive-defender-width: 112px;
+  width: calc(
+    var(--offensive-attacker-width)
+    + var(--offensive-attack-type-width)
+    + (18 * var(--offensive-defender-width))
+  );
+  min-width: 0;
+  margin: 0 auto;
   table-layout: fixed;
+}
+
+.offensive_attacker_column {
+  width: var(--offensive-attacker-width);
+}
+
+.offensive_attack_type_column {
+  width: var(--offensive-attack-type-width);
+}
+
+.offensive_defending_type_column {
+  width: var(--offensive-defender-width);
 }
 
 .offensive_coverage_table thead th {
   position: sticky;
-  top: 84px;
+  top: 0;
   z-index: 8;
   height: 74px;
   padding: 12px 7px;
@@ -344,9 +365,9 @@
 .offensive_coverage_corner {
   left: 0;
   z-index: 12 !important;
-  width: 262px;
-  min-width: 262px;
-  max-width: 262px;
+  width: calc(var(--offensive-attacker-width) + var(--offensive-attack-type-width));
+  min-width: calc(var(--offensive-attacker-width) + var(--offensive-attack-type-width));
+  max-width: calc(var(--offensive-attacker-width) + var(--offensive-attack-type-width));
   color: var(--muted);
   font-size: 0.65rem !important;
   line-height: 1.5;
@@ -359,9 +380,9 @@
 
 .offensive_defending_type,
 .offensive_effectiveness_cell {
-  width: 112px;
-  min-width: 112px;
-  max-width: 112px;
+  width: var(--offensive-defender-width);
+  min-width: var(--offensive-defender-width);
+  max-width: var(--offensive-defender-width);
   text-align: center;
 }
 
@@ -369,9 +390,9 @@
   position: sticky;
   left: 0;
   z-index: 5;
-  width: 150px;
-  min-width: 150px;
-  max-width: 150px;
+  width: var(--offensive-attacker-width);
+  min-width: var(--offensive-attacker-width);
+  max-width: var(--offensive-attacker-width);
   padding: 7px;
   background: #101828;
   text-align: center;
@@ -408,11 +429,11 @@
 
 .offensive_attack_type {
   position: sticky;
-  left: 150px;
+  left: var(--offensive-attacker-width);
   z-index: 4;
-  width: 112px;
-  min-width: 112px;
-  max-width: 112px;
+  width: var(--offensive-attack-type-width);
+  min-width: var(--offensive-attack-type-width);
+  max-width: var(--offensive-attack-type-width);
   height: 54px;
   padding: 5px;
   background: #101828;
@@ -433,4 +454,144 @@
 
 .offensive_coverage_table tbody tr.offensive_group_start:not(:first-child) > * {
   border-top: 4px solid #667085;
+}
+
+@media (max-height: 1100px), (max-width: 1600px) {
+  .team_slots {
+    gap: 7px;
+    margin-bottom: 12px;
+  }
+
+  .team_slot {
+    min-height: 210px;
+    padding: 8px;
+  }
+
+  .team_slot_heading {
+    margin-bottom: 7px;
+  }
+
+  .team_slot_identity {
+    min-height: 82px;
+    gap: 4px;
+  }
+
+  .team_slot_identity img {
+    width: 58px;
+    height: 58px;
+  }
+
+  .ability_selector,
+  .pokemon_selector {
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .ability_selector select,
+  .pokemon_selector input {
+    min-height: 34px;
+  }
+
+  .team_coverage_panel,
+  .team_coverage_scroller {
+    min-height: 220px;
+  }
+
+  .team_coverage_table th,
+  .team_coverage_table td {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+  }
+
+  .team_coverage_table thead th {
+    height: 120px;
+    padding: 5px;
+  }
+
+  .team_coverage_table .team_coverage_corner,
+  .team_coverage_table .team_type_header {
+    width: 92px;
+    min-width: 92px;
+  }
+
+  .team_member_header img {
+    width: 54px;
+    height: 54px;
+  }
+
+  .team_type_header,
+  .team_effectiveness_cell {
+    height: 42px;
+  }
+
+  .team_coverage_table .coverage_total_header,
+  .team_coverage_table .coverage_total {
+    width: 78px;
+    min-width: 78px;
+  }
+
+  .team_coverage_table .coverage_total_weak {
+    right: 78px;
+  }
+
+  .offensive_coverage_table {
+    --offensive-attacker-width: 116px;
+    --offensive-attack-type-width: 80px;
+    --offensive-defender-width: clamp(
+      68px,
+      calc(
+        (
+          100vw
+          - var(--page-inline-padding)
+          - var(--page-inline-padding)
+          - var(--offensive-attacker-width)
+          - var(--offensive-attack-type-width)
+        ) / 18
+      ),
+      92px
+    );
+  }
+
+  .offensive_coverage_table thead th {
+    height: 52px;
+    padding: 5px 3px;
+  }
+
+  .offensive_coverage_corner {
+    padding: 7px !important;
+    font-size: 0.56rem !important;
+    line-height: 1.35;
+  }
+
+  .offensive_coverage_table .type_badge_compact {
+    min-width: 58px;
+    padding: 3px 4px;
+    font-size: 0.54rem;
+  }
+
+  .offensive_attacker_header {
+    padding: 5px;
+  }
+
+  .offensive_attacker_header img {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 2px;
+  }
+
+  .offensive_attacker_header strong,
+  .offensive_attacker_header small {
+    max-width: 104px;
+  }
+
+  .offensive_attack_type,
+  .offensive_effectiveness_cell {
+    height: 42px;
+    padding: 3px;
+  }
+
+  .offensive_coverage_table tbody tr.offensive_group_start:not(:first-child) > * {
+    border-top-width: 3px;
+  }
 }

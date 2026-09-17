@@ -91,3 +91,27 @@
   width: 64px;
   height: 64px;
 }
+
+@media (max-height: 1100px), (max-width: 1600px) {
+  .team_builder_hero {
+    margin-bottom: 12px;
+  }
+
+  .team_builder_team_editor {
+    margin-bottom: 12px;
+    padding: 10px;
+  }
+
+  .team_builder_team_heading {
+    margin-bottom: 8px;
+  }
+
+  .team_builder_team_slot {
+    min-height: 270px;
+  }
+
+  .team_builder_slot_identity img {
+    width: 54px;
+    height: 54px;
+  }
+}

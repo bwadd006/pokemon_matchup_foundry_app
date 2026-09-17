@@ -21,6 +21,12 @@ The offensive mode shows all six team-slot groups with four attack-type rows
 each against individual defending types. Team Matchup uses the same fixed
 six-by-four attacking layout in either direction.
 
+The interface uses a compact responsive density on maximized 1920×1080
+displays. The complete Generation IX Type Chart and all 18 Offensive Coverage
+defending-type columns fit without whole-page horizontal scrolling. On
+narrower windows, wide analysis tables provide their own horizontal scrolling
+while vertical wheel input over those tables continues to scroll the page.
+
 Team Builder appears between Type Chart and Type Coverage, displays Your Team
 and Opponent Team simultaneously, and centralizes Pokémon, ability,
 attacking-type, and saved-team editing. Type Coverage and Team Matchup are

@@ -192,7 +192,7 @@
 
 .team_matchup_table_container {
   min-height: 280px;
-  overflow: visible;
+  overflow-x: auto;
 }
 
 .team_matchup_table {
@@ -203,7 +203,7 @@
 
 .team_matchup_table thead th {
   position: sticky;
-  top: 84px;
+  top: 0;
   z-index: 8;
   height: 154px;
   padding: 7px;
@@ -373,4 +373,91 @@
 .matchup_identity_summary small,
 .matchup_identity_summary > span {
   color: var(--muted);
+}
+
+@media (max-height: 1100px), (max-width: 1600px) {
+  .matchup_team_editor {
+    margin-bottom: 12px;
+    padding: 10px;
+  }
+
+  .matchup_direction_bar {
+    gap: 12px;
+    margin: 12px 0 8px;
+    padding: 9px 12px;
+  }
+
+  .matchup_direction_bar button {
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .team_matchup_legend {
+    margin-bottom: 8px;
+  }
+
+  .team_matchup_panel,
+  .team_matchup_table_container {
+    min-height: 220px;
+  }
+
+  .team_matchup_table thead th {
+    height: 120px;
+    padding: 5px;
+  }
+
+  .matchup_corner {
+    width: 216px;
+    min-width: 216px;
+    max-width: 216px;
+    padding: 7px !important;
+  }
+
+  .matchup_defender_header,
+  .matchup_effectiveness_cell {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+  }
+
+  .matchup_defender_header img {
+    width: 54px;
+    height: 54px;
+  }
+
+  .matchup_attacker_header {
+    width: 126px;
+    min-width: 126px;
+    max-width: 126px;
+    padding: 5px;
+  }
+
+  .matchup_attacker_header img {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 2px;
+  }
+
+  .matchup_attack_type {
+    left: 126px;
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+  }
+
+  .matchup_attack_type,
+  .matchup_effectiveness_cell {
+    height: 42px;
+    padding: 3px;
+  }
+
+  .team_matchup_table tbody tr.matchup_group_start:not(:first-child) > * {
+    border-top-width: 3px;
+  }
+
+  .matchup_identity_summary {
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 9px 12px;
+  }
 }
